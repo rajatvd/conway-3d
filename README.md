@@ -7,5 +7,5 @@ Install requirements:
 
 Example command:
 
-`python conway_to_stl.py die-hard.txt 150 --slice_count 5`
+`python conway_to_stl.py die-hard.txt 150 --slice_count 5 --base_init`
 

@@ -67,7 +67,8 @@ def conway_to_boards(
 
     for i, s in enumerate(splits):
         if i == 0:
-            splits[i] = [full_base, full_base] + s
+            if base_init:
+                splits[i] = [full_base, full_base] + s
             continue
         if base_each_slice:
             base = base_span(s, padding=2)
