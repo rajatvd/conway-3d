@@ -76,13 +76,14 @@ def conway_to_boards(
     return splits
 
 
-def boards_to_stl(boards, filename):
+def boards_to_stl(boards, filename, angle=55):
     """boards_to_stl.
 
     :param boards: List of boards to convert to STL
     :param filename: Filename to save the STL file
+    :param angle: Min overhang angle
     """
-    mesh = boards_to_mesh(boards)
+    mesh = boards_to_mesh(boards, angle=angle)
     mesh.save(filename)
 
 
@@ -115,6 +116,7 @@ def boards_to_stl(boards, filename):
     default=20,
     help="Padding to add around the world",
 )
+@click.option("--angle", type=int, default=55, help="Min overhang angle")
 def main(
     init_file,
     num_generations,
@@ -125,6 +127,7 @@ def main(
     padding,
     output,
     world_padding,
+    angle,
 ):
     """Main function for the CLI."""
     splits = conway_to_boards(
@@ -141,7 +144,11 @@ def main(
     init_file = init_file.split("/")[-1].split(".")[0]
     os.makedirs(f"{init_file}_{output}", exist_ok=True)
     for i, split in enumerate(splits):
-        boards_to_stl(split, f"{init_file}_{output}/{output}_{i}.stl")
+        boards_to_stl(
+            split,
+            f"{init_file}_{output}/{output}_{i}.stl",
+            angle=angle,
+        )
 
 
 if __name__ == "__main__":
