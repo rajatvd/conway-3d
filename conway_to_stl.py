@@ -1,7 +1,7 @@
 import click
 import os
 import numpy as np
-from conway3d import boards_to_mesh, base_span, conway_step
+from conway3d import base_span, conway_step, boards_to_mesh_with_lego
 
 
 def conway_to_boards(
@@ -77,17 +77,6 @@ def conway_to_boards(
     return splits
 
 
-def boards_to_stl(boards, filename, angle=55):
-    """boards_to_stl.
-
-    :param boards: List of boards to convert to STL
-    :param filename: Filename to save the STL file
-    :param angle: Min overhang angle
-    """
-    mesh = boards_to_mesh(boards, angle=angle)
-    mesh.save(filename)
-
-
 @click.command()
 @click.argument("init_file", type=click.Path(exists=True))
 @click.argument("num_generations", type=int)
@@ -117,7 +106,8 @@ def boards_to_stl(boards, filename, angle=55):
     default=20,
     help="Padding to add around the world",
 )
-@click.option("--angle", type=int, default=55, help="Min overhang angle")
+@click.option("--angle", type=float, default=55, help="Min overhang angle")
+@click.option("--scale", type=float, default=5.0, help="Size of one cell in mm")
 def main(
     init_file,
     num_generations,
@@ -129,6 +119,7 @@ def main(
     output,
     world_padding,
     angle,
+    scale,
 ):
     """Main function for the CLI."""
     splits = conway_to_boards(
@@ -144,12 +135,29 @@ def main(
     # get init file name
     init_file = init_file.split("/")[-1].split(".")[0]
     os.makedirs(f"{init_file}_{output}", exist_ok=True)
+    base_lego_points = []
     for i, split in enumerate(splits):
-        boards_to_stl(
+        if i < len(splits) - 1:
+            next_split = splits[i + 1]
+            this_split_lego_points = np.array(np.where(next_split[0] & next_split[1])).T
+            top_lego_points = this_split_lego_points
+        else:
+            top_lego_points = []
+
+        m = boards_to_mesh_with_lego(
             split,
-            f"{init_file}_{output}/{output}_{i}.stl",
             angle=angle,
+            scale=scale,
+            base_lego_points=base_lego_points,
+            top_lego_points=top_lego_points,
+            base_scale=0.2 if i == 0 else 1.0,
         )
+        # m.save(f"{init_file}_{output}/{output}_{i}.stl")
+        m.export(f"{init_file}_{output}/{output}_{i}.stl")
+        base_lego_points = this_split_lego_points.copy()
+
+    z_factor = np.tan(np.radians(angle)) * np.sqrt(2)
+    print(f"{scale*z_factor:.4f} mm per generation")
 
 
 if __name__ == "__main__":
