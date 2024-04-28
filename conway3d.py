@@ -49,6 +49,10 @@ def boards_to_mesh_with_lego(
     vertices = np.array([[x, y, z] for x in range(N) for y in range(N) for z in zs])
     vertices = vertices.astype(np.float32)
     faces = []
+
+    base_lego_vertices = []
+    base_lego_faces = []
+
     pti = partial(point_to_index, nx=N, ny=N, nz=len(boards))
 
     is_source = [np.zeros_like(boards[0], dtype=bool) for _ in range(len(boards))]
@@ -101,17 +105,29 @@ def boards_to_mesh_with_lego(
                     p2 = pti(oldx + 1, oldy + 1, z)
                     p3 = pti(oldx, oldy + 1, z)
 
-                # print("-------------------")
-                # print("making parallelipied with vertices:")
-                # ps = [p0, p1, p2, p3, p4, p5, p6, p7]
-                # for p in ps:
-                #     print(f"  {vertices[p]}")
+                faces.extend(
+                    [
+                        [p0, p3, p1],
+                        [p1, p3, p2],
+                        [p0, p4, p7],
+                        [p0, p7, p3],
+                        [p4, p5, p6],
+                        [p4, p6, p7],
+                        [p5, p1, p2],
+                        [p5, p2, p6],
+                        [p2, p3, p6],
+                        [p3, p7, p6],
+                        [p0, p1, p5],
+                        [p0, p5, p4],
+                    ]
+                )
                 if z == 0 and (x, y) in base_lego_points and old and new:
+                    bot = zs[0] - 1
                     new_vertices = [
-                        [x + border, y + border, 0],
-                        [x + 1 - border, y + border, 0],
-                        [x + 1 - border, y + 1 - border, 0],
-                        [x + border, y + 1 - border, 0],
+                        [x + border, y + border, bot],
+                        [x + 1 - border, y + border, bot],
+                        [x + 1 - border, y + 1 - border, bot],
+                        [x + border, y + 1 - border, bot],
                         #
                         [x + border, y + border, lego_mid_height],
                         [x + 1 - border, y + border, lego_mid_height],
@@ -121,109 +137,26 @@ def boards_to_mesh_with_lego(
                         [x + 0.5, y + 0.5, lego_height],
                     ]
                     new_faces = [
-                        [0, 4, 1],
-                        [1, 4, 5],
-                        [1, 5, 2],
-                        [2, 5, 6],
-                        [2, 6, 3],
-                        [3, 6, 7],
-                        [0, 3, 7],
-                        [0, 7, 4],
-                        [4, 8, 5],
-                        [5, 8, 6],
-                        [6, 8, 7],
-                        [7, 8, 4],
+                        [0, 1, 4],
+                        [1, 5, 4],
+                        [1, 2, 5],
+                        [2, 6, 5],
+                        [2, 3, 6],
+                        [3, 7, 6],
+                        [3, 0, 7],
+                        [0, 4, 7],
+                        [4, 5, 8],
+                        [5, 6, 8],
+                        [6, 7, 8],
+                        [7, 4, 8],
+                        [0, 2, 1],
+                        [0, 3, 2],
                     ]
-                    lv = len(vertices)
-                    new_vertices = np.array(new_vertices)
+
+                    lv = len(base_lego_vertices)
                     new_faces = list(np.array(new_faces) + lv)
-                    vertices = np.vstack([vertices, new_vertices])
-                    faces.extend(new_faces)
-
-                    # the thin rim on the base
-                    faces.extend(
-                        [
-                            [p0, 0 + lv, 1 + lv],
-                            [p0, 1 + lv, p1],
-                            [p1, 1 + lv, 2 + lv],
-                            [p1, 2 + lv, p2],
-                            [p2, 2 + lv, 3 + lv],
-                            [p2, 3 + lv, p3],
-                            [p3, 3 + lv, 0 + lv],
-                            [p3, 0 + lv, p0],
-                        ]
-                    )
-
-                    # the normal cuboid without the bottom
-                    faces.extend(
-                        [
-                            [p0, p4, p7],
-                            [p0, p7, p3],
-                            [p4, p5, p6],
-                            [p4, p6, p7],
-                            [p5, p1, p2],
-                            [p5, p2, p6],
-                            [p2, p3, p6],
-                            [p3, p7, p6],
-                            [p0, p1, p5],
-                            [p0, p5, p4],
-                        ]
-                    )
-
-                elif z == 0 and (old == False) and (new == True):
-                    if (oldx, oldy) in base_lego_points:
-                        # print(oldx, oldy, base_lego_points)
-                        # not old and new, so it must be a birth
-                        # no bottom parallelipied
-                        faces.extend(
-                            [
-                                [p0, p4, p7],
-                                [p0, p7, p3],
-                                [p4, p5, p6],
-                                [p4, p6, p7],
-                                [p5, p1, p2],
-                                [p5, p2, p6],
-                                [p2, p3, p6],
-                                [p3, p7, p6],
-                                [p0, p1, p5],
-                                [p0, p5, p4],
-                            ]
-                        )
-                    else:
-                        faces.extend(
-                            [
-                                [p0, p3, p1],
-                                [p1, p3, p2],
-                                [p0, p4, p7],
-                                [p0, p7, p3],
-                                [p4, p5, p6],
-                                [p4, p6, p7],
-                                [p5, p1, p2],
-                                [p5, p2, p6],
-                                [p2, p3, p6],
-                                [p3, p7, p6],
-                                [p0, p1, p5],
-                                [p0, p5, p4],
-                            ]
-                        )
-
-                else:
-                    faces.extend(
-                        [
-                            [p0, p3, p1],
-                            [p1, p3, p2],
-                            [p0, p4, p7],
-                            [p0, p7, p3],
-                            [p4, p5, p6],
-                            [p4, p6, p7],
-                            [p5, p1, p2],
-                            [p5, p2, p6],
-                            [p2, p3, p6],
-                            [p3, p7, p6],
-                            [p0, p1, p5],
-                            [p0, p5, p4],
-                        ]
-                    )
+                    base_lego_vertices.extend(new_vertices)
+                    base_lego_faces.extend(new_faces)
 
     # add lego to the tops
     top = zs[-1]
@@ -271,17 +204,25 @@ def boards_to_mesh_with_lego(
     # find the z factor such that the max overhang angle is angle
     # tan(angle) = z_factor/sqrt{2}
     z_factor = np.tan(np.radians(angle)) * np.sqrt(2)
-    zeros = np.where(vertices[:, 2] == 0)
     vertices[:, 2] *= z_factor
     vertices *= scale
-    zeros_after = np.where(vertices[:, 2] == 0)
+    m = trimesh.Trimesh(vertices, faces)
 
-    # m = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
-    # for i, f in enumerate(faces):
-    #     for j in range(3):
-    #         m.vectors[i][j] = vertices[f[j], :]
-    m = tri_mesh = trimesh.Trimesh(vertices, faces)
-    return m
+    base_lego_vertices = np.array(base_lego_vertices)
+    diff = m
+    if len(base_lego_vertices) > 0:
+        base_lego_vertices[:, 2] *= z_factor
+        base_lego_vertices *= scale
+
+        base_legos = trimesh.Trimesh(
+            base_lego_vertices,
+            base_lego_faces,
+        )
+        # m.export("m.stl")
+        # base_legos.export("base_legos.stl")
+        import ipdb; ipdb.set_trace() # fmt: skip
+        diff = m.difference(base_legos)
+    return diff
 
 
 # %%
