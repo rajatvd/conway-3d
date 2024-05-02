@@ -136,6 +136,7 @@ def main(
     init_file = init_file.split("/")[-1].split(".")[0]
     os.makedirs(f"{init_file}_{output}", exist_ok=True)
     base_lego_points = []
+    this_split_lego_points = []
     for i, split in enumerate(splits):
         if i < len(splits) - 1:
             next_split = splits[i + 1]
@@ -150,7 +151,7 @@ def main(
             scale=scale,
             base_lego_points=base_lego_points,
             top_lego_points=top_lego_points,
-            base_scale=0.2 if i == 0 else 1.0,
+            base_scale=0.2 if i == 0 and base_init else 1.0,
         )
         # m.save(f"{init_file}_{output}/{output}_{i}.stl")
         m.export(f"{init_file}_{output}/{output}_{i}.stl")
