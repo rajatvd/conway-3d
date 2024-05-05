@@ -28,7 +28,7 @@ def point_to_index(x, y, z, nx, ny, nz):
     return x * ny * nz + y * nz + z
 
 
-def get_parallelipiped(vertices):
+def get_parallelipiped_trimesh(vertices):
     assert len(vertices) == 8, "Need 8 vertices to make a parallepiped"
     faces = [
         [0, 3, 1],
@@ -44,11 +44,11 @@ def get_parallelipiped(vertices):
         [0, 1, 5],
         [0, 5, 4],
     ]
-    return trimesh.Trimesh(vertices, faces, process=False)
+    return TrimeshThing(trimesh.Trimesh(vertices, faces, process=False))
     # return o3d.geometry.TriangleMesh(vertices, faces)
 
 
-def get_thin_transition(vertices, border=0.2, alpha=2.5):
+def get_thin_transition_trimesh(vertices, border=0.15, alpha=3.5):
     assert len(vertices) == 8, "Need 8 vertices to make a parallepiped"
 
     v = np.array(vertices)
@@ -61,7 +61,7 @@ def get_thin_transition(vertices, border=0.2, alpha=2.5):
     updv = np.concatenate([upd_vbot, upd_vtop], axis=0)
 
     new_v = v - center
-    new_v[:, 2] *= 1 - (alpha + 1.5) * border
+    new_v[:, 2] *= 1 - (alpha) * border
     new_v[:, (0, 1)] *= 1 - alpha * border
     new_v += center
 
@@ -98,12 +98,55 @@ def get_thin_transition(vertices, border=0.2, alpha=2.5):
 
     vertices = updv.tolist() + new_v.tolist()
 
-    # v = o3d.utility.Vector3dVector(vertices)
-    # f = o3d.utility.Vector3iVector(faces)
-    # tm = o3d.geometry.TriangleMesh(v, f)
-    # tmt = o3d.t.geometry.TriangleMesh.from_legacy(tm)
-    # return tmt
-    return trimesh.Trimesh(vertices, faces, process=False)
+    return TrimeshThing(trimesh.Trimesh(vertices, faces, process=False))
+
+
+# %%
+def make_lego_trimesh(x, y, z, lego_height, lego_width, scale=1.0):
+    border = (1 - lego_width) / 2.0
+    lego_mid_height = lego_height - lego_width / 2.0
+
+    new_vertices = [
+        [x + border, y + border, z],
+        [x + 1 - border, y + border, z],
+        [x + 1 - border, y + 1 - border, z],
+        [x + border, y + 1 - border, z],
+        #
+        [x + border, y + border, z + lego_mid_height],
+        [x + 1 - border, y + border, z + lego_mid_height],
+        [x + 1 - border, y + 1 - border, z + lego_mid_height],
+        [x + border, y + 1 - border, z + lego_mid_height],
+        #
+        [x + 0.5, y + 0.5, z + lego_height],
+    ]
+
+    new_faces = [
+        [0, 2, 1],
+        [0, 3, 2],
+        [0, 1, 5],
+        [0, 5, 4],
+        [1, 2, 6],
+        [1, 6, 5],
+        [2, 3, 7],
+        [2, 7, 6],
+        [3, 0, 4],
+        [3, 4, 7],
+        [4, 5, 8],
+        [5, 6, 8],
+        [6, 7, 8],
+        [7, 4, 8],
+    ]
+
+    nv = np.array(new_vertices)
+    nv = (nv - nv.mean(axis=0)) * scale + nv.mean(axis=0)
+    new_vertices = nv.tolist()
+    lego = trimesh.Trimesh(new_vertices, new_faces)
+    return TrimeshThing(lego)
+
+
+make_lego = make_lego_trimesh
+get_transition = get_thin_transition_trimesh
+# get_transition = get_parallelipiped_trimesh
 
 
 # %%
@@ -113,8 +156,8 @@ def boards_to_mesh_with_lego(
     angle=45,
     base_lego_points=[],
     top_lego_points=[],
-    lego_width=0.5,
-    lego_height=0.5,
+    lego_width=0.4,
+    lego_height=0.4,
     scale=1,
     base_scale=1.0,
 ):
@@ -130,16 +173,10 @@ def boards_to_mesh_with_lego(
     vertices = np.array([[x, y, z] for x in range(N) for y in range(N) for z in zs])
     vertices = vertices.astype(np.float32)
 
-    base_lego_vertices = []
-    base_lego_faces = []
-
     is_source = [np.zeros_like(boards[0], dtype=bool) for _ in range(len(boards))]
 
-    # lego stats
-    border = (1 - lego_width) / 2.0
-    lego_mid_height = lego_height - lego_width / 2.0
-
     m = None
+
     # now add transition faces
     for zind in range(len(boards) - 1):
         z = zs[zind]
@@ -197,129 +234,57 @@ def boards_to_mesh_with_lego(
                     list(p7),
                 ]
 
-                new_parallepiped = get_thin_transition(new_vertices)
+                new_parallepiped = get_transition(new_vertices)
                 if m is not None:
                     print(
                         x,
                         y,
                         z,
-                        f"m.is_watertight: {m.is_watertight}",
+                        f"m.is_watertight: {m.is_watertight()}",
                     )
-                    old_watertight = m.is_watertight
-                    new_m = m.union(new_parallepiped)
-                    new_watertight = new_m.is_watertight
-                    # if old_watertight and not new_watertight:
-                    #     print("watertight failed")
-                    #     diff = new_m.difference(m)
-                    #     new_parallepiped.export("new_parallepiped.stl")
-                    #     diff.export("diff.stl")
-                    #     import ipdb; ipdb.set_trace()  # fmt: skip
-                    #     m.export("m.stl")
-                    #     new_m.export("new_m.stl")
-                    #     m.vertices
-
+                    old_watertight = m.is_watertight()
+                    new_m = m + new_parallepiped
+                    new_watertight = new_m.is_watertight()
                     m = new_m
-
                 else:
                     m = new_parallepiped
 
                 if z == 0 and (x, y) in base_lego_points and old and new:
-                    bot = zs[0] - 1
-                    new_vertices = [
-                        [x + border, y + border, bot],
-                        [x + 1 - border, y + border, bot],
-                        [x + 1 - border, y + 1 - border, bot],
-                        [x + border, y + 1 - border, bot],
-                        #
-                        [x + border, y + border, lego_mid_height],
-                        [x + 1 - border, y + border, lego_mid_height],
-                        [x + 1 - border, y + 1 - border, lego_mid_height],
-                        [x + border, y + 1 - border, lego_mid_height],
-                        #
-                        [x + 0.5, y + 0.5, lego_height],
-                    ]
-                    new_faces = [
-                        [0, 1, 4],
-                        [1, 5, 4],
-                        [1, 2, 5],
-                        [2, 6, 5],
-                        [2, 3, 6],
-                        [3, 7, 6],
-                        [3, 0, 7],
-                        [0, 4, 7],
-                        [4, 5, 8],
-                        [5, 6, 8],
-                        [6, 7, 8],
-                        [7, 4, 8],
-                        [0, 2, 1],
-                        [0, 3, 2],
-                    ]
-
-                    nv = np.array(new_vertices)
-                    nv = (nv - nv.mean(axis=0)) * 1.05 + nv.mean(axis=0)
-                    new_vertices = nv.tolist()
-
-                    lv = len(base_lego_vertices)
-                    new_faces = list(np.array(new_faces) + lv)
-                    base_lego_vertices.extend(new_vertices)
-                    base_lego_faces.extend(new_faces)
+                    bot = zs[0]
+                    base_lego = make_lego(
+                        x,
+                        y,
+                        bot,
+                        lego_height,
+                        lego_width,
+                        scale=1.05,
+                    )
+                    m = m - base_lego
 
     # add lego to the tops
     top = zs[-1]
     for x, y in top_lego_points:
-        new_vertices = [
-            [x + border, y + border, top],
-            [x + 1 - border, y + border, top],
-            [x + 1 - border, y + 1 - border, top],
-            [x + border, y + 1 - border, top],
-            #
-            [x + border, y + border, top + lego_mid_height],
-            [x + 1 - border, y + border, top + lego_mid_height],
-            [x + 1 - border, y + 1 - border, top + lego_mid_height],
-            [x + border, y + 1 - border, top + lego_mid_height],
-            #
-            [x + 0.5, y + 0.5, top + lego_height],
-        ]
-        new_faces = [
-            [0, 2, 1],
-            [0, 3, 2],
-            [0, 1, 5],
-            [0, 5, 4],
-            [1, 2, 6],
-            [1, 6, 5],
-            [2, 3, 7],
-            [2, 7, 6],
-            [3, 0, 4],
-            [3, 4, 7],
-            # [4, 5, 6],
-            # [4, 6, 7],
-            [4, 5, 8],
-            [5, 6, 8],
-            [6, 7, 8],
-            [7, 4, 8],
-        ]
-
-        top_lego = trimesh.Trimesh(new_vertices, new_faces)
-        top_lego_thing = TrimeshThing(top_lego)
-        if m is not None:
-            m = m + top_lego_thing
-
-    base_lego_vertices = np.array(base_lego_vertices)
-    z_factor = np.tan(np.radians(angle)) * np.sqrt(2)
-    diff = m
-    if len(base_lego_vertices) > 0:
-        base_legos = trimesh.Trimesh(
-            base_lego_vertices,
-            base_lego_faces,
+        top_lego = make_lego(
+            x,
+            y,
+            top,
+            lego_height,
+            lego_width,
+            scale=1.0,
         )
-        m.export("m.stl")
-        base_legos.export("base_legos.stl")
-        diff = m.difference(base_legos)
+        if m is not None:
+            m = m + top_lego
 
-    diff.vertices[:, 2] *= z_factor
-    diff.vertices *= scale
-    print(f"Is watertight: {diff.is_watertight}")
-    return diff
+    # m.vertices[:, 2] *= z_factor
+    # m.vertices *= scale
+    print(f"Is watertight: {m.is_watertight()}")
+    m.to_stl("m.stl")
+    t = trimesh.load_mesh("m.stl", process=False)
+
+    z_factor = np.tan(np.radians(angle)) * np.sqrt(2)
+    t.vertices[:, 2] *= z_factor
+    t.vertices *= scale
+    return t
 
 
 # %%
