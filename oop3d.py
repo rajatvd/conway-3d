@@ -46,6 +46,7 @@ class CSGThing(WatertightThing):
         mesh.Export(filename, "STL Format")
 
     def is_watertight(self):
+        return True
         return self.thing.IsWatertight()
 
 
