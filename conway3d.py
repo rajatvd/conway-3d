@@ -185,6 +185,59 @@ def boards_to_mesh_with_lego(
 
 
 # %%
+def add_base(tm, base_height=2.0, base_padding=5.0, fudge=1e-2):
+    # get min and max x and y and add padding
+    min_x = np.min(tm.vertices[:, 0])
+    min_y = np.min(tm.vertices[:, 1])
+    max_x = np.max(tm.vertices[:, 0])
+    max_y = np.max(tm.vertices[:, 1])
+
+    min_x = min_x - base_padding
+    min_y = min_y - base_padding
+    max_x = max_x + base_padding
+    max_y = max_y + base_padding
+
+    base_bottom = np.min(tm.vertices[:, 2]) - base_height
+    base_top = base_bottom + base_height + fudge
+
+    base_vertices = np.array(
+        [
+            [min_x, min_y, base_bottom],
+            [max_x, min_y, base_bottom],
+            [max_x, max_y, base_bottom],
+            [min_x, max_y, base_bottom],
+            [min_x, min_y, base_top],
+            [max_x, min_y, base_top],
+            [max_x, max_y, base_top],
+            [min_x, max_y, base_top],
+        ]
+    )
+
+    # the base is a cuboid so it has 6 faces so 12 triangles
+    base_faces = np.array(
+        [
+            [0, 1, 2],
+            [0, 2, 3],
+            [4, 5, 6],
+            [4, 6, 7],
+            [0, 1, 5],
+            [0, 5, 4],
+            [1, 2, 6],
+            [1, 6, 5],
+            [2, 3, 7],
+            [2, 7, 6],
+            [3, 0, 4],
+            [3, 4, 7],
+        ]
+    )
+
+    base = trimesh.Trimesh(vertices=base_vertices, faces=base_faces)
+
+    tm = tm.union(base)
+    return tm
+
+
+# %%
 def base_span(boards, padding=1):
     N = len(boards[0])
     base = np.zeros((N, N), dtype=bool)
@@ -209,32 +262,3 @@ def base_span(boards, padding=1):
     max_y = min(N, max_y + padding)
     base[min_x:max_x, min_y:max_y] = True
     return base
-
-
-if __name__ == "__main__":
-    base = [
-        [0, 0, 0],
-        [1, 0, 0],
-        [1, 1, 0],
-        [0, 1, 0],
-    ]
-
-    top1 = [
-        [0, 0, 1],
-        [1, 0, 1],
-        [1, 1, 1],
-        [0, 1, 1],
-    ]
-
-    top2 = [
-        [1, 1, 1],
-        [2, 1, 1],
-        [2, 2, 1],
-        [1, 2, 1],
-    ]
-
-    m1 = get_parallelipiped(base + top1)
-    m2 = get_parallelipiped(base + top2)
-    m = m1.union(m2)
-    m.export("m.stl")
-    m.is_watertight

@@ -1,7 +1,7 @@
 import click
 import os
 import numpy as np
-from conway3d import base_span, conway_step, boards_to_mesh_with_lego
+from conway3d import base_span, conway_step, boards_to_mesh_with_lego, add_base
 
 
 def conway_to_boards(
@@ -11,7 +11,7 @@ def conway_to_boards(
     slice_count=1,
     base_init=True,
     base_each_slice=False,
-    padding=2,
+    padding=5,
     world_padding=20,
 ):
     """conway_to_stl.
@@ -67,8 +67,6 @@ def conway_to_boards(
 
     for i, s in enumerate(splits):
         if i == 0:
-            if base_init:
-                splits[i] = [full_base, full_base] + s
             continue
         if base_each_slice:
             base = base_span(s, padding=2)
@@ -98,7 +96,9 @@ def conway_to_boards(
 @click.option(
     "--base_each_slice", is_flag=True, help="Whether to add a base to each slice"
 )
-@click.option("--padding", type=int, default=2, help="Padding to add around the bases")
+@click.option(
+    "--padding", type=float, default=5.0, help="Padding to add around the bases"
+)
 @click.option("--output", type=str, default="output", help="Output filename")
 @click.option(
     "--world_padding",
@@ -153,6 +153,9 @@ def main(
             top_lego_points=top_lego_points,
             base_scale=0.2 if i == 0 and base_init else 1.0,
         )
+
+        if base_init and i == 0:
+            m = add_base(m, base_height=2.0, base_padding=padding, fudge=1e-2)
         # m.save(f"{init_file}_{output}/{output}_{i}.stl")
         m.export(f"{init_file}_{output}/{output}_{i}.stl")
         base_lego_points = this_split_lego_points.copy()
@@ -163,3 +166,8 @@ def main(
 
 if __name__ == "__main__":
     main()
+    # m = trimesh.load_mesh("./infinite2_lego/lego_0.stl", process=True)
+    # m = add_base(m, base_height=2.0, base_padding=25.0, fudge=1e-2)
+    # m.export("./infinite2_lego/lego_0_base.stl")
+
+
