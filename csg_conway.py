@@ -72,6 +72,7 @@ def make_lego_csg(
     lego_height,
     lego_width,
     scale=1.0,
+    sign=1,
 ):
     border = (1 - lego_width) / 2.0
     lego_mid_height = lego_height - lego_width / 2.0
@@ -103,41 +104,41 @@ def make_lego_csg(
 
     left = Plane(
         Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[1] - vbot, vertices[5] - vbot)),
+        sign * Vec(cross_product(vertices[1] - vbot, vertices[5] - vbot)),
     )
     bot = Plane(
         Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[2] - vbot, vertices[1] - vbot)),
+        sign * Vec(cross_product(vertices[2] - vbot, vertices[1] - vbot)),
     )
     back = Plane(
         Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[4] - vbot, vertices[7] - vbot)),
+        sign * Vec(cross_product(vertices[4] - vbot, vertices[7] - vbot)),
     )
 
     right = Plane(
         Pnt(vtop[0], vtop[1], vtop[2]),
-        Vec(cross_product(vertices[2] - vtop, vertices[3] - vtop)),
+        sign * Vec(cross_product(vertices[2] - vtop, vertices[3] - vtop)),
     )
     front = Plane(
         Pnt(vtop[0], vtop[1], vtop[2]),
-        Vec(cross_product(vertices[1] - vtop, vertices[2] - vtop)),
+        sign * Vec(cross_product(vertices[1] - vtop, vertices[2] - vtop)),
     )
 
     capleft = Plane(
         Pnt(vcap[0], vcap[1], vcap[2]),
-        Vec(cross_product(vertices[4] - vcap, vertices[5] - vcap)),
+        sign * Vec(cross_product(vertices[4] - vcap, vertices[5] - vcap)),
     )
     capbot = Plane(
         Pnt(vcap[0], vcap[1], vcap[2]),
-        Vec(cross_product(vertices[5] - vcap, vertices[6] - vcap)),
+        sign * Vec(cross_product(vertices[5] - vcap, vertices[6] - vcap)),
     )
     capright = Plane(
         Pnt(vcap[0], vcap[1], vcap[2]),
-        Vec(cross_product(vertices[6] - vcap, vertices[7] - vcap)),
+        sign * Vec(cross_product(vertices[6] - vcap, vertices[7] - vcap)),
     )
     capfront = Plane(
         Pnt(vcap[0], vcap[1], vcap[2]),
-        Vec(cross_product(vertices[7] - vcap, vertices[4] - vcap)),
+        sign * Vec(cross_product(vertices[7] - vcap, vertices[4] - vcap)),
     )
 
     thing = left * right * front * back * bot * capleft * capbot * capright * capfront
