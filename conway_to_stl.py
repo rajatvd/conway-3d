@@ -9,9 +9,6 @@ def conway_to_boards(
     num_generations,
     slices=None,
     slice_count=1,
-    base_init=True,
-    base_each_slice=False,
-    padding=5,
     world_padding=20,
 ):
     """conway_to_stl.
@@ -46,11 +43,7 @@ def conway_to_boards(
         board = conway_step(board)
         boards.append(board)
 
-    full_base = base_span(boards, padding=padding)
-
     if slices is None and slice_count == 1:
-        if base_init:
-            boards = [full_base] + boards
         return [boards]
 
     if slices is not None:
@@ -64,13 +57,7 @@ def conway_to_boards(
         boards[split_inds[i] - 1 : split_inds[i + 1]]
         for i in range(len(split_inds) - 1)
     ]
-
-    for i, s in enumerate(splits):
-        if i == 0:
-            continue
-        if base_each_slice:
-            base = base_span(s, padding=2)
-            splits[i] = [base, base] + s
+    splits.append(boards[split_inds[-1] - 1 :])
 
     return splits
 
@@ -94,9 +81,6 @@ def conway_to_boards(
     "--base_init", is_flag=True, help="Whether to add a base to the initial state"
 )
 @click.option(
-    "--base_each_slice", is_flag=True, help="Whether to add a base to each slice"
-)
-@click.option(
     "--padding", type=float, default=5.0, help="Padding to add around the bases"
 )
 @click.option("--output", type=str, default="output", help="Output filename")
@@ -114,7 +98,6 @@ def main(
     slices,
     slice_count,
     base_init,
-    base_each_slice,
     padding,
     output,
     world_padding,
@@ -127,9 +110,6 @@ def main(
         num_generations,
         slices=slices,
         slice_count=slice_count,
-        base_init=base_init,
-        base_each_slice=base_each_slice,
-        padding=padding,
         world_padding=world_padding,
     )
     # get init file name
@@ -165,9 +145,8 @@ def main(
 
 
 if __name__ == "__main__":
+    pass
     main()
     # m = trimesh.load_mesh("./infinite2_lego/lego_0.stl", process=True)
     # m = add_base(m, base_height=2.0, base_padding=25.0, fudge=1e-2)
     # m.export("./infinite2_lego/lego_0_base.stl")
-
-
