@@ -1,7 +1,7 @@
 import click
 import os
 import numpy as np
-from conway3d import base_span, conway_step, boards_to_mesh_with_lego, add_base
+from conway3d import conway_step, boards_to_mesh_with_lego, add_base
 
 
 def conway_to_boards(
@@ -17,9 +17,6 @@ def conway_to_boards(
     :param num_generations: Number of generations to simulate
     :param slices: Locations of slices (this overrides slice_count)
     :param slice_count: Number of slices to generate of equal length
-    :param base_init: Whether to add a base to the initial state
-    :param base_each_slice: Whether to add a base to each slice
-    :param padding: Padding to add around the bases
     :param world_padding: Padding to add around the world
     """
     # Load the initial state
@@ -109,7 +106,7 @@ def main(
         init_file,
         num_generations,
         slices=slices,
-        slice_count=slice_count,
+        slice_count=slice_count - 1,
         world_padding=world_padding,
     )
     # get init file name
