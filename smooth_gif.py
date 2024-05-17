@@ -6,10 +6,14 @@ import imageio
 
 # %%
 
+false_value = 0.1
+true_value = 0.8
+
 
 def make_gif(
     init_file,
     num_generations=135,
+    output="conway.gif",
 ):
     boards = conway_to_boards(
         init_file,
@@ -19,17 +23,26 @@ def make_gif(
         world_padding=9,
     )[0]
 
+    trues = np.where(boards)
+    boards_vals = np.full_like(boards, false_value, dtype=float)
+    boards_vals[trues] = true_value
+
     images = []
-    for i, board in tqdm(enumerate(boards)):
+    for i, board in tqdm(enumerate(boards_vals)):
         plt.figure(figsize=(7, 7))
-        plt.imshow(board)
+        cmap = plt.cm.get_cmap("Greens")
+        plt.imshow(board, cmap=cmap, vmin=0, vmax=1)
         plt.axis("off")
         plt.savefig("temp.png", bbox_inches="tight", pad_inches=0)
         plt.close()
         image = imageio.imread("temp.png")
         images.append(image)
 
-    imageio.mimsave("conway.gif", images)
+    imageio.mimsave(output, images)
+
+
+# %%
+make_gif("die-hard.txt", num_generations=135, output="unsmoothed-die-hard.gif")
 
 
 # %%
@@ -37,6 +50,7 @@ def make_gif_smooth(
     init_file,
     num_generations=135,
     expansion=4,
+    output="conway.gif",
 ):
     boards = conway_to_boards(
         init_file,
@@ -124,10 +138,17 @@ def make_gif_smooth(
 
         smooth_boards = np.append(smooth_boards, transitions, axis=0)
 
+    trues = np.where(smooth_boards)
+    smooth_boards_vals = np.full_like(smooth_boards, false_value, dtype=float)
+    smooth_boards_vals[trues] = true_value
+
     images = []
-    for i, board in tqdm(enumerate(smooth_boards)):
+    for i, board in tqdm(enumerate(smooth_boards_vals)):
         plt.figure(figsize=(7, 7))
-        plt.imshow(board)
+        # set colormap to a lightish green and a bluish white background
+        cmap = plt.cm.get_cmap("Greens")
+        # cmap.set_bad(color="white")
+        plt.imshow(board, cmap=cmap, vmin=0, vmax=1)
         plt.axis("off")
         # plt.grid(True)
         plt.savefig("temp.png", bbox_inches="tight", pad_inches=0)
@@ -135,13 +156,14 @@ def make_gif_smooth(
         image = imageio.imread("temp.png")
         images.append(image)
 
-    imageio.mimsave("conway.gif", images)
+    imageio.mimsave(output, images)
 
 
 # %%
-init_file = "die-hard.txt"
+expansion = 5
 make_gif_smooth(
-    init_file,
-    expansion=10,
+    "die-hard.txt",
+    expansion=expansion,
     num_generations=135,
+    output=f"smoothed-die-hard_expansion{expansion}.gif",
 )
