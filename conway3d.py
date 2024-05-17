@@ -54,7 +54,6 @@ def boards_to_mesh_with_lego(
     lego_width=0.4,
     lego_height=0.4,
     scale=1,
-    base_scale=1.0,
 ):
     # convert to list of tuples
     base_lego_points = [tuple(p) for p in base_lego_points]
@@ -63,7 +62,6 @@ def boards_to_mesh_with_lego(
     # Create grid of vertices corresponding to cell corners
     N = len(boards[0]) + 1
     zs = np.arange(len(boards), dtype=np.float32)
-    zs[1:] -= 1 - base_scale
 
     vertices = np.array([[x, y, z] for x in range(N) for y in range(N) for z in zs])
     vertices = vertices.astype(np.float32)
@@ -152,7 +150,7 @@ def boards_to_mesh_with_lego(
                         bot,
                         lego_height,
                         lego_width,
-                        scale=1.10,
+                        scale=1.1,
                         sign=-1,
                         bottom=False,
                     )
@@ -167,7 +165,7 @@ def boards_to_mesh_with_lego(
             top,
             lego_height,
             lego_width,
-            scale=1.0,
+            scale=0.95,
             bottom=False,
         )
         if m is not None:

@@ -131,7 +131,6 @@ def main(
             scale=scale,
             base_lego_points=base_lego_points,
             top_lego_points=top_lego_points,
-            base_scale=0.2 if i == 0 and base_init else 1.0,
         )
 
         if base_init and i == 0:
