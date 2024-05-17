@@ -152,9 +152,11 @@ def boards_to_mesh_with_lego(
                         bot,
                         lego_height,
                         lego_width,
-                        scale=1.05,
+                        scale=1.10,
+                        sign=-1,
+                        bottom=False,
                     )
-                    m = m - base_lego
+                    m = m * base_lego
 
     # add lego to the tops
     top = zs[-1]
@@ -166,6 +168,7 @@ def boards_to_mesh_with_lego(
             lego_height,
             lego_width,
             scale=1.0,
+            bottom=False,
         )
         if m is not None:
             m = m + top_lego
