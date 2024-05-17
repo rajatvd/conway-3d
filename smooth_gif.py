@@ -14,6 +14,7 @@ def make_gif(
     init_file,
     num_generations=135,
     output="conway.gif",
+    expansion=4,
 ):
     boards = conway_to_boards(
         init_file,
@@ -23,13 +24,27 @@ def make_gif(
         world_padding=9,
     )[0]
 
-    trues = np.where(boards)
-    boards_vals = np.full_like(boards, false_value, dtype=float)
+    expanded_boards = []
+    for board in boards:
+        expanded_board = np.zeros(
+            (expansion * board.shape[0], expansion * board.shape[1]),
+            dtype=bool,
+        )
+        for i in range(board.shape[0]):
+            for j in range(board.shape[1]):
+                expanded_board[
+                    i * expansion : (i + 1) * expansion,
+                    j * expansion : (j + 1) * expansion,
+                ] = board[i, j]
+        expanded_boards.append(expanded_board)
+
+    trues = np.where(expanded_boards)
+    boards_vals = np.full_like(expanded_boards, false_value, dtype=float)
     boards_vals[trues] = true_value
 
     images = []
     for i, board in tqdm(enumerate(boards_vals)):
-        plt.figure(figsize=(7, 7))
+        plt.figure(figsize=(35, 40))
         cmap = plt.cm.get_cmap("Greens")
         plt.imshow(board, cmap=cmap, vmin=0, vmax=1)
         plt.axis("off")
@@ -42,7 +57,12 @@ def make_gif(
 
 
 # %%
-make_gif("die-hard.txt", num_generations=135, output="unsmoothed-die-hard.gif")
+make_gif(
+    "die-hard.txt",
+    num_generations=135,
+    output="unsmoothed-die-hard.mp4",
+    expansion=30,
+)
 
 
 # %%
@@ -160,10 +180,10 @@ def make_gif_smooth(
 
 
 # %%
-expansion = 5
+ex = 5
 make_gif_smooth(
     "die-hard.txt",
-    expansion=expansion,
+    expansion=ex,
     num_generations=135,
-    output=f"smoothed-die-hard_expansion{expansion}.gif",
+    output=f"smoothed-die-hard_expansion{ex}.mp4",
 )
