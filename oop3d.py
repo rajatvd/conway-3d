@@ -42,7 +42,7 @@ class CSGThing(WatertightThing):
     def to_stl(self, filename):
         geo = CSGeometry()
         geo.Add(self.thing)
-        mesh = geo.GenerateMesh(maxh=0.1)
+        mesh = geo.GenerateMesh(maxh=10)
         mesh.Export(filename, "STL Format")
 
     def is_watertight(self):
