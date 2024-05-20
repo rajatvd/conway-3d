@@ -57,12 +57,12 @@ def make_gif(
 
 
 # %%
-make_gif(
-    "die-hard.txt",
-    num_generations=135,
-    output="unsmoothed-die-hard.mp4",
-    expansion=30,
-)
+# make_gif(
+#     "die-hard.txt",
+#     num_generations=135,
+#     output="unsmoothed-die-hard.mp4",
+#     expansion=30,
+# )
 
 
 # %%
@@ -164,7 +164,7 @@ def make_gif_smooth(
 
     images = []
     for i, board in tqdm(enumerate(smooth_boards_vals)):
-        plt.figure(figsize=(7, 7))
+        plt.figure(figsize=(35, 40))
         # set colormap to a lightish green and a bluish white background
         cmap = plt.cm.get_cmap("Greens")
         # cmap.set_bad(color="white")
