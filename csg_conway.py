@@ -251,13 +251,18 @@ def get_thin_transition_csg(vertices):
 
     inner_scale = 0.5
     inner_beam_vertices = (vertices - vertices.mean(axis=0)) * inner_scale
+    inner_vertices = inner_beam_vertices[:] * 0.9
+
     inner_beam_vertices[:4] -= b_to_t_vector[None, :] * 0.1
     inner_beam_vertices[4:] += b_to_t_vector[None, :] * 0.1
-    inner_vertices = inner_beam_vertices * 0.5 + vertices.mean(axis=0)
+
+    inner_vertices[:4] += b_to_t_vector[None, :] * 0.1
+    inner_vertices[4:] -= b_to_t_vector[None, :] * 0.1
+
     inner_beam_vertices = inner_beam_vertices + vertices.mean(axis=0)
+    inner_vertices = inner_vertices + vertices.mean(axis=0)
 
     lower_vertices = np.concatenate([vertices[:4], inner_vertices[:4]])
-
     upper_vertices = np.concatenate([inner_vertices[4:], vertices[4:]])
 
     inner = make_hexahedron_csg(inner_beam_vertices, faces=[LEFT, RIGHT, FRONT, BACK])
