@@ -70,6 +70,9 @@ def boards_to_mesh_with_lego(
 
     m = None
 
+    BASE_LEGO_COUNT = 0
+    base_legos = None
+
     # now add transition faces
     for zind in range(len(boards) - 1):
         z = zs[zind]
@@ -142,19 +145,32 @@ def boards_to_mesh_with_lego(
                 else:
                     m = new_parallepiped
 
-                if z == 0 and (x, y) in base_lego_points and old and new:
-                    bot = zs[0]
-                    base_lego = make_lego(
-                        x,
-                        y,
-                        bot,
-                        lego_height,
-                        lego_width,
-                        scale=1.1,
-                        sign=-1,
-                        bottom=False,
-                    )
-                    m = m * base_lego
+        if z == 0:
+            for x, y in base_lego_points:
+                print(f"Adding base lego number {BASE_LEGO_COUNT} at {x}, {y}, {z}")
+                bot = zs[0]
+                base_lego = make_lego(
+                    x,
+                    y,
+                    bot,
+                    lego_height,
+                    lego_width,
+                    scale=1.1,
+                    sign=-1,
+                    bottom=False,
+                )
+                m = m * base_lego
+                # if base_legos is not None:
+                #     base_legos = base_legos + base_lego
+                # else:
+                #     base_legos = base_lego
+                BASE_LEGO_COUNT += 1
+
+    if m is None:
+        raise ValueError("No cells in the board")
+
+    # if base_legos is not None:
+    #     m = m * base_legos
 
     # add lego to the tops
     top = zs[-1]

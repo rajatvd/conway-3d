@@ -113,6 +113,7 @@ def main(
     init_file = init_file.split("/")[-1].split(".")[0]
     os.makedirs(f"{init_file}_{output}", exist_ok=True)
     base_lego_points = []
+
     this_split_lego_points = []
     for i, split in enumerate(splits):
         if i < len(splits) - 1:
@@ -122,6 +123,8 @@ def main(
         else:
             top_lego_points = []
 
+        print(f"Number of top lego points: {len(top_lego_points)}")
+        print(f"Number of base lego points: {len(base_lego_points)}")
         m = boards_to_mesh_with_lego(
             split,
             angle=angle,
