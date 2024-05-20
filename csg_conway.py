@@ -11,6 +11,60 @@ def cross_product(v1, v2):
     ]
 
 
+# %%
+LEFT = 0
+RIGHT = 1
+FRONT = 2
+BACK = 3
+TOP = 4
+BOT = 5
+
+
+# %%
+def make_hexahedron_csg(
+    vertices,
+    faces=[LEFT, RIGHT, FRONT, BACK, TOP, BOT],
+):
+    vbot = vertices[0]
+    vtop = vertices[6]
+
+    all_faces = [None for _ in range(6)]
+    all_faces[LEFT] = Plane(
+        Pnt(vbot[0], vbot[1], vbot[2]),
+        Vec(cross_product(vertices[1] - vbot, vertices[5] - vbot)),
+    )
+    all_faces[BOT] = Plane(
+        Pnt(vbot[0], vbot[1], vbot[2]),
+        Vec(cross_product(vertices[2] - vbot, vertices[1] - vbot)),
+    )
+    all_faces[BACK] = Plane(
+        Pnt(vbot[0], vbot[1], vbot[2]),
+        Vec(cross_product(vertices[4] - vbot, vertices[7] - vbot)),
+    )
+
+    all_faces[RIGHT] = Plane(
+        Pnt(vtop[0], vtop[1], vtop[2]),
+        Vec(cross_product(vertices[2] - vtop, vertices[3] - vtop)),
+    )
+    all_faces[TOP] = Plane(
+        Pnt(vtop[0], vtop[1], vtop[2]),
+        Vec(cross_product(vertices[7] - vtop, vertices[5] - vtop)),
+    )
+    all_faces[FRONT] = Plane(
+        Pnt(vtop[0], vtop[1], vtop[2]),
+        Vec(cross_product(vertices[1] - vtop, vertices[2] - vtop)),
+    )
+
+    thing = None
+    for i in faces:
+        if thing is None:
+            thing = all_faces[i]
+        else:
+            thing = thing * all_faces[i]
+
+    return CSGThing(thing)
+
+
 def get_parallelipiped_csg(vertices):
     assert len(vertices) == 8, "Need 8 vertices to make a parallepiped"
     vertices = np.array(vertices)
@@ -25,44 +79,9 @@ def get_parallelipiped_csg(vertices):
     fudge = 1e-2
     vertices = np.concatenate([b, t])
     vertices = (vertices - vertices.mean(axis=0)) * (1 + fudge) + vertices.mean(axis=0)
-    vbot = vertices[0]
-    vtop = vertices[6]
 
-    left = Plane(
-        Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[1] - vbot, vertices[5] - vbot)),
-    )
-    bot = Plane(
-        Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[2] - vbot, vertices[1] - vbot)),
-    )
-    back = Plane(
-        Pnt(vbot[0], vbot[1], vbot[2]),
-        Vec(cross_product(vertices[4] - vbot, vertices[7] - vbot)),
-    )
-
-    right = Plane(
-        Pnt(vtop[0], vtop[1], vtop[2]),
-        Vec(cross_product(vertices[2] - vtop, vertices[3] - vtop)),
-    )
-    top = Plane(
-        Pnt(vtop[0], vtop[1], vtop[2]),
-        Vec(cross_product(vertices[7] - vtop, vertices[5] - vtop)),
-    )
-    front = Plane(
-        Pnt(vtop[0], vtop[1], vtop[2]),
-        Vec(cross_product(vertices[1] - vtop, vertices[2] - vtop)),
-    )
-
-    thing = left * right * front * back * bot * top
-
-    # asdb = CSGeometry()
-    # asdb.Add(thing)
-    # mesh = asdb.GenerateMesh(maxh=0.1)
-    # mesh.Export("parallepiped.stl", "STL Format")
-
-    return CSGThing(thing)
-    # return o3d.geometry.TriangleMesh(vertices, faces)
+    hex = make_hexahedron_csg(vertices)
+    return hex
 
 
 def make_lego_csg(
@@ -210,3 +229,47 @@ def make_lego_csg(
             thing = left * right * front * back * capleft * capbot * capright * capfront
 
     return CSGThing(thing)
+
+
+# %%
+def get_thin_transition_csg(vertices):
+    assert len(vertices) == 8, "Need 8 vertices to make a transition"
+    vertices = np.array(vertices)
+
+    b = vertices[:4]
+    t = vertices[4:]
+
+    scale = 1.05
+    b = (b - b.mean(axis=0)) * scale + b.mean(axis=0)
+    t = (t - t.mean(axis=0)) * scale + t.mean(axis=0)
+
+    b_to_t_vector = t.mean(axis=0) - b.mean(axis=0)
+
+    fudge = 1e-2
+    vertices = np.concatenate([b, t])
+    vertices = (vertices - vertices.mean(axis=0)) * (1 + fudge) + vertices.mean(axis=0)
+
+    inner_scale = 0.5
+    inner_beam_vertices = (vertices - vertices.mean(axis=0)) * inner_scale
+    inner_beam_vertices[:4] -= b_to_t_vector[None, :] * 0.1
+    inner_beam_vertices[4:] += b_to_t_vector[None, :] * 0.1
+    inner_vertices = inner_beam_vertices * 0.5 + vertices.mean(axis=0)
+    inner_beam_vertices = inner_beam_vertices + vertices.mean(axis=0)
+
+    lower_vertices = np.concatenate([vertices[:4], inner_vertices[:4]])
+
+    upper_vertices = np.concatenate([inner_vertices[4:], vertices[4:]])
+
+    inner = make_hexahedron_csg(inner_beam_vertices, faces=[LEFT, RIGHT, FRONT, BACK])
+    upper = make_hexahedron_csg(upper_vertices, faces=[LEFT, RIGHT, FRONT, BACK, TOP])
+    lower = make_hexahedron_csg(lower_vertices, faces=[LEFT, RIGHT, FRONT, BACK, BOT])
+
+    everything = make_hexahedron_csg(vertices)
+
+    thing = (inner + upper + lower) * everything
+    # inner.to_stl("inner.stl")
+    # upper.to_stl("upper.stl")
+    # lower.to_stl("lower.stl")
+    # thing.to_stl("thing.stl")
+
+    return thing

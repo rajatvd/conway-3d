@@ -9,7 +9,7 @@ from trimesh_conway import (
     make_lego_trimesh,
 )
 
-from csg_conway import get_parallelipiped_csg, make_lego_csg
+from csg_conway import get_parallelipiped_csg, get_thin_transition_csg, make_lego_csg
 
 
 def conway_step(board):
@@ -41,7 +41,8 @@ get_transition = get_thin_transition_trimesh
 
 # %%
 make_lego = make_lego_csg
-get_transition = get_parallelipiped_csg
+# get_transition = get_parallelipiped_csg
+get_transition = get_thin_transition_csg
 
 
 # %%
