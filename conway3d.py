@@ -158,7 +158,6 @@ def boards_to_mesh_with_lego(
                     lego_width,
                     scale=1.1,
                     sign=-1,
-                    bottom=False,
                 )
                 m = m * base_lego
                 # if base_legos is not None:
@@ -182,8 +181,8 @@ def boards_to_mesh_with_lego(
             top,
             lego_height,
             lego_width,
-            scale=0.95,
-            bottom=False,
+            scale=0.7,
+            sign=1,
         )
         if m is not None:
             m = m + top_lego
