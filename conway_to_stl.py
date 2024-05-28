@@ -43,18 +43,16 @@ def conway_to_boards(
     if slices is None and slice_count == 1:
         return [boards]
 
-    if slices is not None:
-        split_inds = slices
-    else:
-        slice_size = len(boards) // slice_count
-        split_inds = list(range(0, len(boards), slice_size))
-        split_inds[0] = 1
+    if slices is None:
+        slice_size = (num_generations + slice_count - 1) // slice_count
+        slices = [slice_size * i for i in range(1, slice_count)]
+        slices.append(num_generations + 1)
 
-    splits = [
-        boards[split_inds[i] - 1 : split_inds[i + 1]]
-        for i in range(len(split_inds) - 1)
-    ]
-    splits.append(boards[split_inds[-1] - 1 :])
+    start = 0
+    splits = []
+    for s in slices:
+        splits.append(boards[start : s + 1])
+        start = s
 
     return splits
 
@@ -89,6 +87,7 @@ def conway_to_boards(
 )
 @click.option("--angle", type=float, default=55, help="Min overhang angle")
 @click.option("--scale", type=float, default=5.0, help="Size of one cell in mm")
+@click.option("--top_lego_scale", type=float, default=1.0, help="Scaling of top legos")
 def main(
     init_file,
     num_generations,
@@ -100,13 +99,14 @@ def main(
     world_padding,
     angle,
     scale,
+    top_lego_scale,
 ):
     """Main function for the CLI."""
     splits = conway_to_boards(
         init_file,
         num_generations,
         slices=slices,
-        slice_count=slice_count - 1,
+        slice_count=slice_count,
         world_padding=world_padding,
     )
     # get init file name
@@ -131,6 +131,7 @@ def main(
             scale=scale,
             base_lego_points=base_lego_points,
             top_lego_points=top_lego_points,
+            top_lego_scale=top_lego_scale,
         )
 
         if base_init and i == 0:

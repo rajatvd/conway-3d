@@ -55,6 +55,7 @@ def boards_to_mesh_with_lego(
     lego_width=0.4,
     lego_height=0.4,
     scale=1,
+    top_lego_scale=0.9,
 ):
     # convert to list of tuples
     base_lego_points = [tuple(p) for p in base_lego_points]
@@ -181,7 +182,7 @@ def boards_to_mesh_with_lego(
             top,
             lego_height,
             lego_width,
-            scale=0.7,
+            scale=top_lego_scale,
             sign=1,
         )
         if m is not None:
