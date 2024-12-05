@@ -2,3 +2,5 @@ numpy
 numpy-stl
 click
 matplotlib
+trimesh
+ngsolve
