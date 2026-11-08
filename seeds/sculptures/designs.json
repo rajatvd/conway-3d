@@ -1,0 +1,66 @@
+{
+  "palette": [
+    {
+      "name": "Evergreen",
+      "hex": "#20856C"
+    },
+    {
+      "name": "Amber",
+      "hex": "#E8B44F"
+    },
+    {
+      "name": "Coral",
+      "hex": "#EC7864"
+    }
+  ],
+  "designs": [
+    {
+      "id": "glider-comet",
+      "title": "GLIDER / COMET",
+      "seed": "glider.txt",
+      "generations": 16,
+      "cell_mm": 3.8,
+      "angle_degrees": 45,
+      "world_padding": 20,
+      "epoch_cuts": [
+        5.5,
+        11.5
+      ],
+      "base_height_mm": 3.2,
+      "base_padding_mm": 3.5,
+      "view_azimuth": -48
+    },
+    {
+      "id": "pulsar-cathedral",
+      "title": "PULSAR / CATHEDRAL",
+      "seed": "pulsar.txt",
+      "generations": 9,
+      "cell_mm": 5.0,
+      "angle_degrees": 45,
+      "world_padding": 20,
+      "epoch_cuts": [
+        3.5,
+        6.5
+      ],
+      "base_height_mm": 3.2,
+      "base_padding_mm": 3.5,
+      "view_azimuth": -48
+    },
+    {
+      "id": "r-bloom",
+      "title": "R / BLOOM",
+      "seed": "r-pentomino.txt",
+      "generations": 16,
+      "cell_mm": 3.8,
+      "angle_degrees": 45,
+      "world_padding": 20,
+      "epoch_cuts": [
+        5.5,
+        11.5
+      ],
+      "base_height_mm": 3.2,
+      "base_padding_mm": 3.5,
+      "view_azimuth": -38
+    }
+  ]
+}

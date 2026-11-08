@@ -2,6 +2,8 @@ import numpy as np
 from functools import partial
 import matplotlib.pyplot as plt
 import trimesh
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from trimesh_conway import (
     get_parallelipiped_trimesh,
@@ -45,6 +47,69 @@ make_lego = make_lego_csg
 get_transition = get_thin_transition_csg
 
 
+def transition_vertices(old, new, z):
+    """Yield the original cell-to-cell birth/survival links for one time step.
+
+    Births use the legacy traversal's last occupied neighbor row, first
+    occupied column. Dead cells emit no link. Coordinates are (row, column, t).
+    """
+    if old.shape != new.shape or old.ndim != 2:
+        raise ValueError("Transition boards must be matching 2D arrays")
+    nx, ny = old.shape
+    for x, y in np.argwhere(new):
+        oldx, oldy = x, y
+        if not old[x, y]:
+            sources = []
+            for i in (-1, 0, 1):
+                for j in (-1, 0, 1):
+                    if (
+                        (i or j)
+                        and 0 <= x + i < nx
+                        and 0 <= y + j < ny
+                        and old[x + i, y + j]
+                    ):
+                        sources.append((x + i, y + j))
+                        break
+            if not sources:
+                raise ValueError("Birth has no local source; increase world padding")
+            oldx, oldy = sources[-1]
+        yield (
+            x,
+            y,
+            [
+                [oldx, oldy, z],
+                [oldx + 1, oldy, z],
+                [oldx + 1, oldy + 1, z],
+                [oldx, oldy + 1, z],
+                [x, y, z + 1],
+                [x + 1, y, z + 1],
+                [x + 1, y + 1, z + 1],
+                [x, y + 1, z + 1],
+            ],
+        )
+
+
+def boards_to_mesh(boards, angle=45, scale=1):
+    """Batch-union the existing thin trimesh links, without Lego connectors.
+
+    Like the original CSG exporter, time 0 is the source plane and the last
+    board is a finite cut. No artificial initial/final population is added.
+    """
+    if len(boards) < 2 or not 0 < angle < 90 or scale <= 0:
+        raise ValueError("Need two boards, 0 < angle < 90, and positive scale")
+    links = [
+        get_thin_transition_trimesh(v).thing
+        for z, (old, new) in enumerate(zip(boards, boards[1:]))
+        for _, _, v in transition_vertices(old, new, z)
+    ]
+    if not links:
+        raise ValueError("No cells in the board")
+    mesh = trimesh.boolean.union(links, engine="manifold")
+    mesh.vertices[:, 2] *= np.tan(np.radians(angle)) * np.sqrt(2)
+    mesh.vertices *= scale
+    return mesh
+
+
 # %%
 # given a sequence of boards, construct 3d model with z axis as the time axis
 def boards_to_mesh_with_lego(
@@ -60,15 +125,7 @@ def boards_to_mesh_with_lego(
     # convert to list of tuples
     base_lego_points = [tuple(p) for p in base_lego_points]
     top_lego_points = [tuple(p) for p in top_lego_points]
-    # angle is overhang angle in degrees
-    # Create grid of vertices corresponding to cell corners
-    N = len(boards[0]) + 1
     zs = np.arange(len(boards), dtype=np.float32)
-
-    vertices = np.array([[x, y, z] for x in range(N) for y in range(N) for z in zs])
-    vertices = vertices.astype(np.float32)
-
-    is_source = [np.zeros_like(boards[0], dtype=bool) for _ in range(len(boards))]
 
     m = None
 
@@ -78,74 +135,23 @@ def boards_to_mesh_with_lego(
     # now add transition faces
     for zind in range(len(boards) - 1):
         z = zs[zind]
-        next_z = zs[zind + 1]
-        for x in range(N - 1):
-            for y in range(N - 1):
-                old = boards[zind][x, y]
-                new = boards[zind + 1][x, y]
-                p4 = (x, y, next_z)
-                p5 = (x + 1, y, next_z)
-                p6 = (x + 1, y + 1, next_z)
-                p7 = (x, y + 1, next_z)
-                if (old == False) and (new == False):
-                    # already dead
-                    continue
-                if (old == True) and (new == False):
-                    # death
-                    continue
-                if (old == True) and (new == True):
-                    # already alive
-                    p0 = (x, y, z)
-                    p1 = (x + 1, y, z)
-                    p2 = (x + 1, y + 1, z)
-                    p3 = (x, y + 1, z)
-                if (old == False) and (new == True):
-                    # birth
-                    # find an alive neighbor from the previous board
-                    for i in (-1, 0, 1):
-                        for j in (-1, 0, 1):
-                            if i == 0 and j == 0:
-                                continue
-                            if (
-                                0 <= x + i < N - 1
-                                and 0 <= y + j < N - 1
-                                and boards[zind][x + i, y + j]
-                            ):
-                                oldx = x + i
-                                oldy = y + j
-                                is_source[zind][oldx, oldy] = True
-                                break
-
-                    p0 = (oldx, oldy, z)
-                    p1 = (oldx + 1, oldy, z)
-                    p2 = (oldx + 1, oldy + 1, z)
-                    p3 = (oldx, oldy + 1, z)
-
-                new_vertices = [
-                    list(p0),
-                    list(p1),
-                    list(p2),
-                    list(p3),
-                    list(p4),
-                    list(p5),
-                    list(p6),
-                    list(p7),
-                ]
-
-                new_parallepiped = get_transition(new_vertices)
-                if m is not None:
-                    print(
-                        x,
-                        y,
-                        z,
-                        f"m.is_watertight: {m.is_watertight()}",
-                    )
-                    old_watertight = m.is_watertight()
-                    new_m = m + new_parallepiped
-                    new_watertight = new_m.is_watertight()
-                    m = new_m
-                else:
-                    m = new_parallepiped
+        for x, y, new_vertices in transition_vertices(
+            boards[zind], boards[zind + 1], z
+        ):
+            new_parallepiped = get_transition(new_vertices)
+            if m is not None:
+                print(
+                    x,
+                    y,
+                    z,
+                    f"m.is_watertight: {m.is_watertight()}",
+                )
+                old_watertight = m.is_watertight()
+                new_m = m + new_parallepiped
+                new_watertight = new_m.is_watertight()
+                m = new_m
+            else:
+                m = new_parallepiped
 
         if z == 0:
             for x, y in base_lego_points:
@@ -190,8 +196,12 @@ def boards_to_mesh_with_lego(
 
     # m.vertices[:, 2] *= z_factor
     # m.vertices *= scale
-    m.to_stl("m.stl")
-    t = trimesh.load_mesh("m.stl", process=True)
+    # CSG exports through a file; never overwrite a caller's model or race
+    # another export in the same working directory.
+    with TemporaryDirectory(prefix="conway3d-") as scratch:
+        path = Path(scratch) / "mesh.stl"
+        m.to_stl(str(path))
+        t = trimesh.load_mesh(path, process=True)
     print(f"Is watertight: {t.is_watertight}")
 
     z_factor = np.tan(np.radians(angle)) * np.sqrt(2)
