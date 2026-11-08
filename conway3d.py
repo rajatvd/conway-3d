@@ -90,19 +90,41 @@ def transition_vertices(old, new, z):
         )
 
 
-def boards_to_mesh(boards, angle=45, scale=1):
-    """Batch-union the existing thin trimesh links, without Lego connectors.
+def boards_to_mesh(
+    boards, angle=45, scale=1, transition="thin", transition_overlap_cells=0.0
+):
+    """Batch-union thin or standard constant-width links, without Lego connectors.
+
+    Standard links use the original eight-vertex parallelepiped constructor.
+    Optional overlap expands both XY caps uniformly, never time or section shape.
 
     Like the original CSG exporter, time 0 is the source plane and the last
     board is a finite cut. No artificial initial/final population is added.
     """
     if len(boards) < 2 or not 0 < angle < 90 or scale <= 0:
         raise ValueError("Need two boards, 0 < angle < 90, and positive scale")
-    links = [
-        get_thin_transition_trimesh(v).thing
-        for z, (old, new) in enumerate(zip(boards, boards[1:]))
-        for _, _, v in transition_vertices(old, new, z)
-    ]
+    if transition not in ("thin", "standard"):
+        raise ValueError("Transition must be thin or standard")
+    if not np.isfinite(transition_overlap_cells) or transition_overlap_cells < 0:
+        raise ValueError("Transition overlap must be finite and nonnegative")
+    if transition != "standard" and transition_overlap_cells:
+        raise ValueError("Uniform overlap is only supported for standard transitions")
+    constructor = (
+        get_parallelipiped_trimesh
+        if transition == "standard"
+        else get_thin_transition_trimesh
+    )
+    links = []
+    for z, (old, new) in enumerate(zip(boards, boards[1:])):
+        for _, _, vertices in transition_vertices(old, new, z):
+            vertices = np.asarray(vertices, dtype=float)
+            if transition_overlap_cells:
+                for cap in (vertices[:4], vertices[4:]):
+                    center = cap[:, :2].mean(axis=0)
+                    cap[:, :2] = (cap[:, :2] - center) * (
+                        1 + transition_overlap_cells
+                    ) + center
+            links.append(constructor(vertices).thing)
     if not links:
         raise ValueError("No cells in the board")
     mesh = union_meshes(links)

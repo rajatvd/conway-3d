@@ -40,6 +40,23 @@ GFDL pattern-data license live in `seeds/sculptures/intricate/PROVENANCE.md`;
 software remains MIT licensed. The independent seed tests verify the periods,
 emitted glider, real collision, and unbounded sparse Life agreement.
 
+For the same three histories with the original **standard constant-width**
+parallelepiped links (no pinched waists or flared caps):
+
+```sh
+.venv/bin/python sculptures.py standard-exports --config seeds/sculptures/intricate-standard.json --font /path/to/CascadiaMono.ttf
+.venv/bin/python sculptures.py standard-exports --config seeds/sculptures/intricate-standard.json --validate-only
+```
+
+These separate `-standard` identities preserve the thin recipes. The standard
+recipe uses the existing eight-vertex/twelve-triangle constructor and a uniform
+XY width overlap of 0.0001 cells, necessary to resolve exact edge contacts on
+STL reload. Width is `cell_mm * 1.0001` throughout each link; each side moves
+outward by `cell_mm * 0.00005`. Time coordinates are not inflated. Classification
+corridors are widened only to expose actual color volumes on the full-width
+surface; clipping never changes the complete geometry. Corner-contact junctions
+can still be extremely small and are not certified for physical fabrication.
+
 To recolor previously generated shapes **without re-exporting the complete STL**,
 add `--complete-from originals`, where `originals/<design-id>/complete.stl` contains
 each authoritative shape. Recipe SHA-256 checks enforce byte-for-byte identity.
@@ -53,7 +70,7 @@ Colors follow actual transition structure, not time bands: Evergreen plinth,
 Ivory framework and joint rims, Coral birth-link stems, Violet birth-link heads.
 The last two are volumetric corridors following the original deterministic
 source-neighbor construction, not claims of unique biological ancestry. Local
-head/neck motifs repeat on birth links while surviving links remain ivory, so
+stem/head color motifs repeat on birth links while surviving links remain ivory, so
 multiple materials occupy the same horizontal levels. Up to four named materials
 are supported by the single 3MF/GLB export and independent validation pipeline;
 assembly IDs are allocated after all material mesh IDs.
@@ -73,12 +90,14 @@ horizontal cross-sections; this avoids a numerically fragile N-way re-weld of
 coincident interfaces. Strict lib3mf reload verifies material assignment and
 closed/oriented meshes; GLB buffers, colors, units, and orientation are reloaded.
 
-Life and the existing thin trimesh transition geometry are unchanged. Time 0 is
+Life and source-neighbor semantics are unchanged. Earlier recipes keep their
+thin links; the separate standard recipes use full constant-width links. Time 0 is
 the source plane and the last generation is a finite cut, not extinction. The
 periodic simulation is padded and checked to stay away from its seam. The legacy
 CSG/Lego geometry exporter still uses a private temporary STL, never cwd `m.stl`.
-Mesh validity is **not** physical print validation: narrow waists, diagonal birth
-struts, flared caps, bridges, and small color-interface features require
+Mesh validity is **not** physical print validation: diagonal birth links,
+bridges, tiny overlap contacts, small color-interface features, and the thin
+recipes' waists/flared caps require
 process-specific review. These colors can require many filament swaps; minimizing
 swaps is not the design objective. No slicing or printing is performed.
 

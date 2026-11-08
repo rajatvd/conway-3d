@@ -40,15 +40,22 @@ def structural_parts(complete, boards, config):
     """Green plinth, ivory framework, coral birth stems, violet birth heads.
 
     Every colored birth corridor follows an emitted transition's actual selected
-    source and destination. A narrower-than-cell corridor and terminal clearance
-    leave ivory collars/rims at shared joints. Small kissing material interfaces
+    source and destination. Corridors and terminal clearance assign birth regions
+    and ivory-colored joint rims without changing the complete geometry (standard
+    links remain full constant-width sections). Kissing material interfaces
     belong to a full junction neighborhood, never a physical gap in the shape.
     """
     recipe = config["structural_color"]
     scale = config["cell_mm"]
     zfactor = np.tan(np.radians(config["angle_degrees"])) * np.sqrt(2)
     step = scale * zfactor
-    raw = boards_to_mesh(boards, config["angle_degrees"], scale)
+    raw = boards_to_mesh(
+        boards,
+        config["angle_degrees"],
+        scale,
+        transition=config.get("transition", "thin"),
+        transition_overlap_cells=config.get("transition_overlap_cells", 0.0),
+    )
     shift = np.array(
         [
             -raw.bounds[:, 0].mean(),
@@ -84,8 +91,10 @@ def structural_parts(complete, boards, config):
         generation = union(masks)
         births.append(generation)
         bottom = config["base_height_mm"] + (z + recipe["head_start"]) * step
-        top = config["base_height_mm"] + (z + 1.01) * step
-        heads.append(generation ^ slab(complete.bounds, bottom, top))
+        top = config["base_height_mm"] + (z + 1) * step
+        # Only the final born volume needs this cut: intersecting the same
+        # corridor twice creates coincident side faces in constant-width links.
+        heads.append(slab(complete.bounds, bottom, top))
     if not births:
         raise ValueError("Structural recipe needs at least one birth link")
     birth_mask, head_mask = union(births), union(heads)

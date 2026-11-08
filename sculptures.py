@@ -326,7 +326,11 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
     for b in boards:
         assert not (b[:2].any() or b[-2:].any() or b[:, :2].any() or b[:, -2:].any())
     mesh = boards_to_mesh(
-        boards, angle=config["angle_degrees"], scale=config["cell_mm"]
+        boards,
+        angle=config["angle_degrees"],
+        scale=config["cell_mm"],
+        transition=config.get("transition", "thin"),
+        transition_overlap_cells=config.get("transition_overlap_cells", 0.0),
     )
     mesh.apply_translation(
         [
@@ -381,7 +385,14 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
         "structure": structure,
         "population_by_generation": [int(b.sum()) for b in boards],
         "boundary": "periodic simulation; all live cells stay >1 cell from seam",
-        "geometry": "original thin trimesh transitions; manifold union; integrated plinth",
+        "transition": config.get("transition", "thin"),
+        "transition_overlap_cells": config.get("transition_overlap_cells", 0.0),
+        "geometry": (
+            "standard constant-width parallelepiped transitions; "
+            if config.get("transition", "thin") == "standard"
+            else "original thin trimesh transitions; "
+        )
+        + "double-precision manifold union; integrated plinth",
         "finite_cut": f"Source t=0 through t={config['generations']}, not an extinction claim",
     }
     (destination / "settings.json").write_text(json.dumps(settings, indent=2) + "\n")
