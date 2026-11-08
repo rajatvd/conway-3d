@@ -1,0 +1,70 @@
+{
+  "palette": [
+    {
+      "name": "Family-A",
+      "hex": "#176454"
+    },
+    {
+      "name": "Family-B",
+      "hex": "#F3E9CE"
+    },
+    {
+      "name": "Family-C",
+      "hex": "#FF594D"
+    },
+    {
+      "name": "Family-D",
+      "hex": "#9971F4"
+    }
+  ],
+  "designs": [
+    {
+      "id": "galaxy-vault-strands",
+      "title": "GALAXY / STRANDS",
+      "seed": "intricate/koks-galaxy.txt",
+      "generations": 16,
+      "cell_mm": 6.0,
+      "angle_degrees": 40,
+      "world_padding": 40,
+      "base_height_mm": 2.0,
+      "base_padding_mm": 1.8,
+      "view_azimuth": -48,
+      "semantics": "Kok's galaxy; two full period-eight cycles; finite t=0..16",
+      "subtitle": "WHOLE ROOT STRANDS / 40 DEG / t 0-16",
+      "transition": "standard",
+      "transition_overlap_cells": 0.0001
+    },
+    {
+      "id": "gosper-loom-strands",
+      "title": "GOSPER / STRANDS",
+      "seed": "intricate/gosper-glider-gun.txt",
+      "generations": 30,
+      "cell_mm": 4.0,
+      "angle_degrees": 35,
+      "world_padding": 40,
+      "base_height_mm": 2.0,
+      "base_padding_mm": 1.8,
+      "view_azimuth": -55,
+      "semantics": "Gosper gun; one full period-30 core cycle; finite t=0..30",
+      "subtitle": "WHOLE ROOT STRANDS / 35 DEG / t 0-30",
+      "transition": "standard",
+      "transition_overlap_cells": 0.0001
+    },
+    {
+      "id": "crossfire-arbor-strands",
+      "title": "CROSSFIRE / STRANDS",
+      "seed": "intricate/acorn-crossfire.txt",
+      "generations": 28,
+      "cell_mm": 3.8,
+      "angle_degrees": 35,
+      "world_padding": 40,
+      "base_height_mm": 2.0,
+      "base_padding_mm": 1.8,
+      "view_azimuth": -42,
+      "semantics": "Authored acorn interaction; t11 interaction and t27 peak included; finite t=0..28",
+      "subtitle": "WHOLE ROOT STRANDS / 35 DEG / t 0-28",
+      "transition": "standard",
+      "transition_overlap_cells": 0.0001
+    }
+  ]
+}

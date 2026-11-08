@@ -14,92 +14,67 @@ Example command:
 
 Use [this converter](https://lasttheory.com/tools/rle-to-text-converter) to convert initializations in [RLE](https://conwaylife.com/wiki/Run_Length_Encoded) to text.
 
-## Structurally colored tabletop sculptures
+## Whole-strand tabletop sculptures
 
-Three deterministic recipes in `seeds/sculptures/` generate a glider, a
-period-three pulsar, and a finite R-pentomino transient. Use a dedicated
-environment and a **new** output directory:
+The default `seeds/sculptures/strands.json` contains two Kok's galaxy cycles,
+one Gosper gun core cycle, and the interacting-acorn transient through t=28.
+These open configurations use standard constant-width parallelepipeds, steeper
+time axes and smaller integrated bases. Seed attribution and GFDL data terms
+are in `seeds/sculptures/intricate/PROVENANCE.md`; software remains MIT.
 
 ```sh
 uv venv .venv
 uv pip install --python .venv/bin/python -r requirements-sculptures.txt
 .venv/bin/python sculptures.py exports --font /path/to/CascadiaMono.ttf
 .venv/bin/python sculptures.py exports --validate-only
+.venv/bin/python -m pytest -q tests
 ```
 
-For three broader, longer-history structures, select the separate recipe set:
+Use a fresh output directory. A local `--config profile.json` can supply display
+materials and recipes; generic committed palettes are not printer routing maps.
+Cascadia Mono is available from Microsoft's `cascadia-code` releases.
 
-```sh
-.venv/bin/python sculptures.py intricate-exports --config seeds/sculptures/intricate.json --font /path/to/CascadiaMono.ttf
-```
+Color is inherited through the **actual selected source** of each construction
+link. Dominant roots surviving to the cut anchor up to four families. Minor root
+trees join the nearest concurrent anchor trail. A root keeps its family throughout
+its evolution: no head/stem phases, height bands, fixed XYZ bins, corridor masks,
+rainbow cycles or per-face paint. This geometric construction forest is not unique
+biological Life ancestry. Every family unions whole emitted links using the same
+constructor and spatial/time transforms as the complete mesh.
 
-It contains a four-cycle Kok's galaxy vault, a two-cycle Gosper gun network,
-and an authored interacting pair of acorns. Longest dimensions are about
-114–166 mm, using 3.8–6 mm cells. Canonical seed attribution and the scoped
-GFDL pattern-data license live in `seeds/sculptures/intricate/PROVENANCE.md`;
-software remains MIT licensed. The independent seed tests verify the periods,
-emitted glider, real collision, and unbounded sparse Life agreement.
+Material zero owns the actual plinth; dominant anchor rank resolves overlapping
+link volumes. Bounded microscopic interface repairs transfer only existing
+multiple-family overlaps to an incident family, never changing the complete
+geometry or adding decorative joints. Root/link records and repair measurements
+are saved in settings. Section checks measure area agreement without forcing
+colors into every height. Reload proof recomputes the forest and reports the
+longest connected vertical span of each material.
 
-For the same three histories with the original **standard constant-width**
-parallelepiped links (no pinched waists or flared caps):
+Standard links use the original eight-vertex/twelve-triangle constructor.
+Uniform XY width overlap is 0.0001 cells, necessary to avoid exact edge contacts
+on STL reload. Width stays `cell_mm * 1.0001` throughout each link; each side moves
+outward `cell_mm * 0.00005`, with no Z expansion, taper, waist or flared cap.
+The shared double-precision Boolean path and ASCII STLs retain fine coordinates.
+Earlier recipe files retain their seed/geometric profiles but now use whole-strand
+coloring; old Git revisions and delivery bundles retain the earlier color methods.
+No legacy slab/corridor coloring mode is offered.
 
-```sh
-.venv/bin/python sculptures.py standard-exports --config seeds/sculptures/intricate-standard.json --font /path/to/CascadiaMono.ttf
-.venv/bin/python sculptures.py standard-exports --config seeds/sculptures/intricate-standard.json --validate-only
-```
+Outputs include complete mm STL, closed registered per-material STLs, multipart
+material 3MF, Y-up meter GLB, two actual-mesh JPEG views, overview, seed/settings,
+and independent reload proofs. Import color STLs together without separately
+centering, scaling, arranging or dropping parts. STL has no embedded color.
+`--complete-from originals` can preserve an authoritative complete STL; recipe
+hashes are enforced for authority copies, while fresh exports record their own
+hash. Existing design output directories are never overwritten.
 
-These separate `-standard` identities preserve the thin recipes. The standard
-recipe uses the existing eight-vertex/twelve-triangle constructor and a uniform
-XY width overlap of 0.0001 cells, necessary to resolve exact edge contacts on
-STL reload. Width is `cell_mm * 1.0001` throughout each link; each side moves
-outward by `cell_mm * 0.00005`. Time coordinates are not inflated. Classification
-corridors are widened only to expose actual color volumes on the full-width
-surface; clipping never changes the complete geometry. Corner-contact junctions
-can still be extremely small and are not certified for physical fabrication.
+Coverage checks retain containment, overlap and volume-conservation residuals.
+Strict lib3mf verifies closed/oriented meshes, material RGBA and assembly/buffers;
+GLB buffers, colors, orientation and units are independently reloaded. Time zero
+is the source plane; the last generation is a finite cut, not extinction. Padded
+periodic simulation must stay away from its seam. Legacy CSG/Lego scratch files
+never overwrite cwd `m.stl`.
 
-To recolor previously generated shapes **without re-exporting the complete STL**,
-add `--complete-from originals`, where `originals/<design-id>/complete.stl` contains
-each authoritative shape. Recipe SHA-256 checks enforce byte-for-byte identity.
-New generation uses one double-precision union path and ASCII complete STLs,
-with a newly recorded output hash; historical recipe hashes are enforced for
-explicit authority copies, not assumed invariant under reserialization.
-Existing output design directories are never overwritten. Cascadia Mono is
-available from Microsoft's `cascadia-code` releases.
-
-Colors follow actual transition structure, not time bands: Evergreen plinth,
-Ivory framework and joint rims, Coral birth-link stems, Violet birth-link heads.
-The last two are volumetric corridors following the original deterministic
-source-neighbor construction, not claims of unique biological ancestry. Local
-stem/head color motifs repeat on birth links while surviving links remain ivory, so
-multiple materials occupy the same horizontal levels. Up to four named materials
-are supported by the single 3MF/GLB export and independent validation pipeline;
-assembly IDs are allocated after all material mesh IDs.
-
-Outputs include the complete uncolored STL, registered closed per-material STLs,
-a standard core multipart/material 3MF, color GLB, two JPEG mesh views per design,
-a three-up overview, seeds, settings, and reload proofs. STL/3MF coordinates are
-millimeters; GLB uses Y-up meters. Import color STLs together as one multipart
-object; never independently center, scale, arrange, or drop them to the bed.
-
-The complete mesh is the authority. Double-precision Boolean masks only assign
-its volume to materials. Tiny kissing color-interface neighborhoods are assigned
-to an unbroken joint material without changing the sculpture. ASCII STLs retain
-fine interface precision. Coverage checks measure each part outside the authority,
-pairwise overlap, summed volume conservation, and material areas in identical
-horizontal cross-sections; this avoids a numerically fragile N-way re-weld of
-coincident interfaces. Strict lib3mf reload verifies material assignment and
-closed/oriented meshes; GLB buffers, colors, units, and orientation are reloaded.
-
-Life and source-neighbor semantics are unchanged. Earlier recipes keep their
-thin links; the separate standard recipes use full constant-width links. Time 0 is
-the source plane and the last generation is a finite cut, not extinction. The
-periodic simulation is padded and checked to stay away from its seam. The legacy
-CSG/Lego geometry exporter still uses a private temporary STL, never cwd `m.stl`.
-Mesh validity is **not** physical print validation: diagonal birth links,
-bridges, tiny overlap contacts, small color-interface features, and the thin
-recipes' waists/flared caps require
-process-specific review. These colors can require many filament swaps; minimizing
-swaps is not the design objective. No slicing or printing is performed.
-
-Tests: install `pytest` in that environment, then
-`.venv/bin/python -m pytest -q tests`.
+Mesh validity is **not** print suitability: microscopic overlap contacts, diagonal
+links, bridges, disconnected minor strands and small material interfaces need
+process-specific review. Nominal link width is not certified minimum thickness.
+No strength/support-free claim, slicing or physical action is performed.

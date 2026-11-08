@@ -23,6 +23,7 @@ from sculpture_preview import checked_jpeg, overview, render
 from structural_color import (
     partition_certificate,
     section_certificate,
+    strand_families,
     structural_parts,
 )
 from trimesh_conway import union_meshes
@@ -203,10 +204,34 @@ def validate_assets(directory):
     if "complete_sha256" in config:
         assert complete_hash == config["complete_sha256"]
     sections = (
-        section_certificate(complete, parts, config)
-        if "structural_color" in config
-        else []
+        section_certificate(complete, parts, config) if "structure" in config else []
     )
+    strand_proof = None
+    if (
+        "structure" in config
+        and config["structure"].get("method") == "whole-link root strand families"
+    ):
+        boards = conway_to_boards(
+            directory / "seed.txt",
+            config["generations"],
+            world_padding=config["world_padding"],
+        )[0]
+        _, forest = strand_families(boards, len(parts))
+        assert forest == config["structure"]["forest"]
+        step = config["generation_height_mm"]
+        spans = [
+            max(
+                float(c.extents[2])
+                for c in p.split(only_watertight=False, repair=False)
+            )
+            for p in parts
+        ]
+        strand_proof = {
+            "root_paths_recomputed": True,
+            "no_height_color_resets": True,
+            "longest_connected_z_span_mm": spans,
+            "longest_connected_generations": [s / step for s in spans],
+        }
     # Decode the delivered XML ourselves; do not trust our writer's in-memory meshes.
     with zipfile.ZipFile(directory / "multicolor.3mf") as archive:
         assert archive.testzip() is None
@@ -309,6 +334,7 @@ def validate_assets(directory):
         "complete_sha256": complete_hash,
         "partition_certificate": certificate,
         "horizontal_sections": sections,
+        "strand_proof": strand_proof,
         "three_mf_registered_materials_and_buffers": True,
         "glb_y_up_meters_colors_and_buffers": True,
     }
@@ -339,12 +365,8 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
             config["base_height_mm"] - mesh.bounds[0, 2],
         ]
     )
-    mesh = union_meshes(
-        [
-            mesh,
-            integrated_base(mesh, config["base_height_mm"], config["base_padding_mm"]),
-        ]
-    )
+    base = integrated_base(mesh, config["base_height_mm"], config["base_padding_mm"])
+    mesh = union_meshes([mesh, base])
     if complete_from is None:
         mesh.export(destination / "complete.stl", file_type="stl_ascii")
     else:
@@ -361,7 +383,8 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
         and complete_hash != config["complete_sha256"]
     ):
         raise ValueError("Complete shape differs from the recipe's authoritative STL")
-    parts, structure = structural_parts(complete, boards, config)
+    parts, structure = structural_parts(complete, boards, config, base, len(palette))
+    palette = palette[: len(parts)]
     for i, (part, color) in enumerate(zip(parts, palette)):
         part.export(
             destination / f"{i + 1:02}-{color['name'].lower()}.stl",
@@ -403,7 +426,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path)
     parser.add_argument(
-        "--config", type=Path, default=ROOT / "seeds/sculptures/designs.json"
+        "--config", type=Path, default=ROOT / "seeds/sculptures/strands.json"
     )
     parser.add_argument("--font", type=Path)
     parser.add_argument(
@@ -431,10 +454,8 @@ def main():
                 args.output,
                 args.complete_from,
             )
-            palette = [c["hex"] for c in configs["palette"]]
-            subtitle = design.get(
-                "subtitle", "IVORY FRAME / CORAL LINKS / VIOLET HEADS"
-            )
+            palette = [c["hex"] for c in configs["palette"][: len(parts)]]
+            subtitle = design.get("subtitle", "CONTINUOUS CONSTRUCTION STRANDS")
             for suffix, az, el in [
                 ("preview", design["view_azimuth"], 24),
                 ("detail", design["view_azimuth"] + 95, 38),

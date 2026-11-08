@@ -132,7 +132,8 @@ def test_scratch_does_not_overwrite_cwd(tmp_path, monkeypatch):
 def test_full_roundtrip_and_color_partition(tmp_path, seed, generations, scale):
     mesh = boards_to_mesh(boards(seed, generations), scale=scale)
     mesh.apply_translation([-mesh.bounds[:, 0].mean(), -mesh.bounds[:, 1].mean(), 3.2])
-    mesh = union_meshes([mesh, integrated_base(mesh, 3.2, 3.5)])
+    base = integrated_base(mesh, 3.2, 3.5)
+    mesh = union_meshes([mesh, base])
     mesh.export(tmp_path / "complete.stl", file_type="stl_ascii")
     mesh = trimesh.load_mesh(tmp_path / "complete.stl")
     config = next(
@@ -142,26 +143,32 @@ def test_full_roundtrip_and_color_partition(tmp_path, seed, generations, scale):
     )
     config = {**config, "generations": generations, "cell_mm": scale}
     config.pop("complete_sha256")
-    parts, _ = structural_parts(mesh, boards(seed, generations), config)
-    for i, (part, color) in enumerate(zip(parts, PALETTE)):
+    parts, structure = structural_parts(mesh, boards(seed, generations), config, base)
+    palette = PALETTE[: len(parts)]
+    config = {
+        **config,
+        "structure": structure,
+        "generation_height_mm": scale * np.sqrt(2),
+    }
+    for i, (part, color) in enumerate(zip(parts, palette)):
         part.export(
             tmp_path / f"{i + 1:02}-{color['name'].lower()}.stl", file_type="stl_ascii"
         )
     parts = [
         trimesh.load_mesh(tmp_path / f"{i + 1:02}-{c['name'].lower()}.stl")
-        for i, c in enumerate(PALETTE)
+        for i, c in enumerate(palette)
     ]
-    export_3mf(parts, PALETTE, tmp_path / "multicolor.3mf")
-    export_glb(parts, PALETTE, tmp_path / "multicolor.glb")
-    (tmp_path / "settings.json").write_text(json.dumps({**config, "palette": PALETTE}))
+    export_3mf(parts, palette, tmp_path / "multicolor.3mf")
+    export_glb(parts, palette, tmp_path / "multicolor.glb")
+    (tmp_path / "settings.json").write_text(json.dumps({**config, "palette": palette}))
+    (tmp_path / "seed.txt").write_text((SEEDS / f"{seed}.txt").read_text())
     proof = validate_assets(tmp_path)
     assert proof["complete"]["components"] == 1
     assert proof["three_mf_registered_materials_and_buffers"]
     assert proof["glb_y_up_meters_colors_and_buffers"]
-    assert proof["lib3mf_strict"]["mesh_objects"] == 4
-    assert all(
-        r["materials_over_one_percent"] >= 2 for r in proof["horizontal_sections"]
-    )
+    assert proof["lib3mf_strict"]["mesh_objects"] == len(palette)
+    assert proof["strand_proof"]["root_paths_recomputed"]
+    assert len(proof["horizontal_sections"]) == generations * 3
 
 
 def test_preview_guards(tmp_path):

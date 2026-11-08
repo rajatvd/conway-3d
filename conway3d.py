@@ -1,5 +1,6 @@
 import numpy as np
 from functools import partial
+from itertools import pairwise
 import matplotlib.pyplot as plt
 import trimesh
 from pathlib import Path
@@ -90,19 +91,8 @@ def transition_vertices(old, new, z):
         )
 
 
-def boards_to_mesh(
-    boards, angle=45, scale=1, transition="thin", transition_overlap_cells=0.0
-):
-    """Batch-union thin or standard constant-width links, without Lego connectors.
-
-    Standard links use the original eight-vertex parallelepiped constructor.
-    Optional overlap expands both XY caps uniformly, never time or section shape.
-
-    Like the original CSG exporter, time 0 is the source plane and the last
-    board is a finite cut. No artificial initial/final population is added.
-    """
-    if len(boards) < 2 or not 0 < angle < 90 or scale <= 0:
-        raise ValueError("Need two boards, 0 < angle < 90, and positive scale")
+def transition_meshes(boards, transition="thin", transition_overlap_cells=0.0):
+    """Yield (time, destination, selected source, mesh) from one constructor path."""
     if transition not in ("thin", "standard"):
         raise ValueError("Transition must be thin or standard")
     if not np.isfinite(transition_overlap_cells) or transition_overlap_cells < 0:
@@ -114,9 +104,9 @@ def boards_to_mesh(
         if transition == "standard"
         else get_thin_transition_trimesh
     )
-    links = []
-    for z, (old, new) in enumerate(zip(boards, boards[1:])):
-        for _, _, vertices in transition_vertices(old, new, z):
+    for z, (old, new) in enumerate(pairwise(boards)):
+        for x, y, vertices in transition_vertices(old, new, z):
+            source = tuple(map(int, vertices[0][:2]))
             vertices = np.asarray(vertices, dtype=float)
             if transition_overlap_cells:
                 for cap in (vertices[:4], vertices[4:]):
@@ -124,13 +114,37 @@ def boards_to_mesh(
                     cap[:, :2] = (cap[:, :2] - center) * (
                         1 + transition_overlap_cells
                     ) + center
-            links.append(constructor(vertices).thing)
-    if not links:
-        raise ValueError("No cells in the board")
-    mesh = union_meshes(links)
+            yield z, (int(x), int(y)), source, constructor(vertices).thing
+
+
+def scale_mesh(mesh, angle, scale):
+    """Shared spatial/time scaling for complete solids and whole-link families."""
+    if not 0 < angle < 90 or scale <= 0:
+        raise ValueError("Need 0 < angle < 90 and positive scale")
     mesh.vertices[:, 2] *= np.tan(np.radians(angle)) * np.sqrt(2)
     mesh.vertices *= scale
     return mesh
+
+
+def boards_to_mesh(
+    boards, angle=45, scale=1, transition="thin", transition_overlap_cells=0.0
+):
+    """Union original links; t=0 is the source plane, last board a finite cut.
+
+    Standard links keep a constant XY section, with optional uniform overlap.
+    No artificial initial/final population or Lego connectors are added.
+    """
+    if len(boards) < 2 or not 0 < angle < 90 or scale <= 0:
+        raise ValueError("Need two boards, 0 < angle < 90, and positive scale")
+    links = [
+        m
+        for _, _, _, m in transition_meshes(
+            boards, transition, transition_overlap_cells
+        )
+    ]
+    if not links:
+        raise ValueError("No cells in the board")
+    return scale_mesh(union_meshes(links), angle, scale)
 
 
 # %%

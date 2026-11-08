@@ -29,18 +29,8 @@
       "base_height_mm": 4.0,
       "base_padding_mm": 5.0,
       "view_azimuth": -48,
-      "structural_color": {
-        "corridor_width_cells": 1.001,
-        "link_interval": [
-          0.11,
-          0.935
-        ],
-        "head_start": 0.64,
-        "plinth_overlap_mm": 0.22,
-        "junction_clearance_mm": 0.012
-      },
       "semantics": "Kok's galaxy; four full period-eight cycles; finite t=0..32",
-      "subtitle": "CONSTANT WIDTH / P8 / FOUR CYCLES / t 0-32",
+      "subtitle": "WHOLE CONSTRUCTION STRANDS",
       "transition": "standard",
       "transition_overlap_cells": 0.0001
     },
@@ -55,18 +45,8 @@
       "base_height_mm": 4.0,
       "base_padding_mm": 5.0,
       "view_azimuth": -55,
-      "structural_color": {
-        "corridor_width_cells": 1.001,
-        "link_interval": [
-          0.11,
-          0.935
-        ],
-        "head_start": 0.64,
-        "plinth_overlap_mm": 0.22,
-        "junction_clearance_mm": 0.012
-      },
       "semantics": "Gosper glider gun; two complete period-30 core cycles plus four steps; finite t=0..64",
-      "subtitle": "CONSTANT WIDTH / P30 CORE / TWO CYCLES / t 0-64",
+      "subtitle": "WHOLE CONSTRUCTION STRANDS",
       "transition": "standard",
       "transition_overlap_cells": 0.0001
     },
@@ -81,18 +61,8 @@
       "base_height_mm": 4.0,
       "base_padding_mm": 5.0,
       "view_azimuth": -42,
-      "structural_color": {
-        "corridor_width_cells": 1.001,
-        "link_interval": [
-          0.11,
-          0.935
-        ],
-        "head_start": 0.64,
-        "plinth_overlap_mm": 0.22,
-        "junction_clearance_mm": 0.012
-      },
       "semantics": "Authored two-acorn interaction; first departure from independent evolution t=11; finite t=0..32",
-      "subtitle": "CONSTANT WIDTH / INTERACTING ACORNS / t 0-32",
+      "subtitle": "WHOLE CONSTRUCTION STRANDS",
       "transition": "standard",
       "transition_overlap_cells": 0.0001
     }

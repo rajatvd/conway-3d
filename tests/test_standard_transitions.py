@@ -79,22 +79,11 @@ def test_standard_recipe_changes_only_transition_identity(recipe, prior):
         "subtitle",
         "transition",
         "transition_overlap_cells",
-        "structural_color",
     }
     assert {k: v for k, v in recipe.items() if k not in exempt} == {
         k: v for k, v in prior.items() if k not in exempt
     }
     assert recipe["id"] == prior["id"] + "-standard"
-    assert {
-        k: v
-        for k, v in recipe["structural_color"].items()
-        if k != "corridor_width_cells"
-    } == {
-        k: v
-        for k, v in prior["structural_color"].items()
-        if k != "corridor_width_cells"
-    }
-    assert recipe["structural_color"]["corridor_width_cells"] == 1.001
     assert recipe["transition"] == "standard"
     assert recipe["transition_overlap_cells"] == 0.0001
     # Same exact boards, not only matching population totals.
@@ -156,31 +145,3 @@ def test_invalid_transition_options(kind, overlap):
     old = np.ones((2, 2), dtype=bool)
     with pytest.raises(ValueError):
         boards_to_mesh([old, old], transition=kind, transition_overlap_cells=overlap)
-
-
-def test_birth_materials_reach_the_standard_link_surface_without_changing_width():
-    from structural_color import partition_certificate, structural_parts
-
-    old = np.zeros((5, 5), dtype=bool)
-    old[2, 2] = True
-    new = np.zeros_like(old)
-    new[1, 3] = True
-    config = {**STANDARD["designs"][0], "generations": 1}
-    mesh = boards_to_mesh(
-        [old, new],
-        angle=22,
-        scale=6,
-        transition="standard",
-        transition_overlap_cells=0.0001,
-    )
-    mesh.apply_translation([-mesh.bounds[:, 0].mean(), -mesh.bounds[:, 1].mean(), 4])
-    mesh = union_meshes([mesh, integrated_base(mesh, 4, 5)])
-    parts, _ = structural_parts(mesh, [old, new], config)
-    partition_certificate(mesh, parts)
-    step = 6 * np.tan(np.radians(22)) * np.sqrt(2)
-    for phase, color in [(0.5, 2), (0.85, 3)]:
-        height = 4 + phase * step
-        complete_section = native(mesh).slice(height)
-        colored_section = native(parts[color]).slice(height)
-        assert np.isclose(colored_section.area(), complete_section.area())
-        assert np.isclose(colored_section.area(), 6.0006**2)
