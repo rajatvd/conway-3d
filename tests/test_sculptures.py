@@ -15,9 +15,9 @@ from sculptures import (
     export_3mf,
     export_glb,
     integrated_base,
-    split_epochs,
     validate_assets,
 )
+from structural_color import partition_certificate, structural_parts
 
 SEEDS = Path(__file__).resolve().parents[1] / "seeds/sculptures"
 PALETTE = json.loads((SEEDS / "designs.json").read_text())["palette"]
@@ -124,28 +124,45 @@ def test_scratch_does_not_overwrite_cwd(tmp_path, monkeypatch):
     assert not paths[0].exists()  # scratch lifetime ends after load
 
 
-def test_full_roundtrip_and_color_partition(tmp_path):
-    mesh = boards_to_mesh(boards("glider", 4), scale=4)
-    mesh.apply_translation([0, 0, 3.2])
+@pytest.mark.parametrize(
+    "seed,generations,scale",
+    [("glider", 4, 4), ("pulsar", 3, 5), ("r-pentomino", 16, 3.8)],
+)
+def test_full_roundtrip_and_color_partition(tmp_path, seed, generations, scale):
+    mesh = boards_to_mesh(boards(seed, generations), scale=scale)
+    mesh.apply_translation([-mesh.bounds[:, 0].mean(), -mesh.bounds[:, 1].mean(), 3.2])
     mesh = trimesh.boolean.union(
         [mesh, integrated_base(mesh, 3.2, 3.5)], engine="manifold"
     )
     mesh.export(tmp_path / "complete.stl")
     mesh = trimesh.load_mesh(tmp_path / "complete.stl")
-    parts = split_epochs(mesh, [3.2 + 1.5 * 4 * np.sqrt(2), 3.2 + 2.5 * 4 * np.sqrt(2)])
+    config = next(
+        d
+        for d in json.loads((SEEDS / "designs.json").read_text())["designs"]
+        if d["seed"] == seed + ".txt"
+    )
+    config = {**config, "generations": generations, "cell_mm": scale}
+    config.pop("complete_sha256")
+    parts, _ = structural_parts(mesh, boards(seed, generations), config)
     for i, (part, color) in enumerate(zip(parts, PALETTE)):
-        part.export(tmp_path / f"{i + 1:02}-{color['name'].lower()}.stl")
+        part.export(
+            tmp_path / f"{i + 1:02}-{color['name'].lower()}.stl", file_type="stl_ascii"
+        )
     parts = [
         trimesh.load_mesh(tmp_path / f"{i + 1:02}-{c['name'].lower()}.stl")
         for i, c in enumerate(PALETTE)
     ]
     export_3mf(parts, PALETTE, tmp_path / "multicolor.3mf")
     export_glb(parts, PALETTE, tmp_path / "multicolor.glb")
-    (tmp_path / "settings.json").write_text(json.dumps({"palette": PALETTE}))
+    (tmp_path / "settings.json").write_text(json.dumps({**config, "palette": PALETTE}))
     proof = validate_assets(tmp_path)
     assert proof["complete"]["components"] == 1
     assert proof["three_mf_registered_materials_and_buffers"]
     assert proof["glb_y_up_meters_colors_and_buffers"]
+    assert proof["lib3mf_strict"]["mesh_objects"] == 4
+    assert all(
+        r["materials_over_one_percent"] >= 2 for r in proof["horizontal_sections"]
+    )
 
 
 def test_preview_guards(tmp_path):
@@ -160,3 +177,52 @@ def test_preview_guards(tmp_path):
     Image.new("RGB", (100, 100)).save(p, format="PNG")
     with pytest.raises(AssertionError):
         checked_jpeg(p)
+
+
+@pytest.mark.parametrize("count", [1, 2, 3, 4])
+def test_material_count_roundtrips_without_id_collision(tmp_path, count):
+    # Axis slabs are a minimal serialization fixture, not an available art mode.
+    parts = []
+    for i in range(count):
+        m = trimesh.creation.box(extents=[1, 2, 2])
+        m.apply_translation([i + 0.5, 0, 1])
+        parts.append(m)
+    complete = trimesh.creation.box(extents=[count, 2, 2])
+    complete.apply_translation([count / 2, 0, 1])
+    complete.export(tmp_path / "complete.stl")
+    palette = PALETTE[:count]
+    for i, (part, color) in enumerate(zip(parts, palette)):
+        part.export(tmp_path / f"{i + 1:02}-{color['name'].lower()}.stl")
+    parts = [
+        trimesh.load_mesh(tmp_path / f"{i + 1:02}-{c['name'].lower()}.stl")
+        for i, c in enumerate(palette)
+    ]
+    export_3mf(parts, palette, tmp_path / "multicolor.3mf")
+    export_glb(parts, palette, tmp_path / "multicolor.glb")
+    (tmp_path / "settings.json").write_text(json.dumps({"palette": palette}))
+    proof = validate_assets(tmp_path)
+    assert proof["lib3mf_strict"]["mesh_objects"] == count
+    assert proof["lib3mf_strict"]["warnings"] == 0
+
+
+@pytest.mark.parametrize("error", ["hole", "overlap", "outside"])
+def test_partition_certificate_rejects_bad_geometry(error):
+    full = trimesh.creation.box(extents=[4, 4, 4])
+    if error == "hole":
+        parts = [trimesh.creation.box(extents=[2, 2, 2])]
+    elif error == "overlap":
+        parts = [full.copy(), full.copy()]
+    else:
+        shifted = full.copy()
+        shifted.apply_translation([1, 0, 0])
+        parts = [shifted]
+    with pytest.raises(AssertionError):
+        partition_certificate(full, parts)
+
+
+@pytest.mark.parametrize("exporter", [export_3mf, export_glb])
+def test_invalid_material_counts(exporter, tmp_path):
+    with pytest.raises(ValueError):
+        exporter([], [], tmp_path / "empty")
+    with pytest.raises(ValueError):
+        exporter([trimesh.creation.box()], PALETTE, tmp_path / "mismatch")

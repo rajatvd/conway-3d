@@ -3,7 +3,7 @@
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 BACKGROUND = (17, 25, 32)
 
@@ -98,7 +98,9 @@ def render(parts, colors, path, title, subtitle, font_path, azimuth=-48, elevati
         draw.rounded_rectangle(
             (27 + i * 23, 605, 42 + i * 23, 610), radius=2, fill=color
         )
-    draw.text((110, 599), "TIME UP / mm", font=small, fill=(144, 161, 166))
+    draw.text(
+        (39 + len(colors) * 23, 599), "STRUCTURE / mm", font=small, fill=(144, 161, 166)
+    )
     return save_jpeg(image, path)
 
 
@@ -111,14 +113,17 @@ def overview(paths, path, titles, font_path):
         checked_jpeg(source)
         with Image.open(source) as detail:
             # The mesh occupies the central workspace, not the label plane.
-            crop = detail.crop((20, 90, 620, 590)).resize(
-                (211, 202), Image.Resampling.LANCZOS
+            crop = ImageOps.contain(
+                detail.crop((20, 90, 620, 590)), (211, 202), Image.Resampling.LANCZOS
             )
-            image.paste(crop, (i * 213 + 1, 50))
+            image.paste(
+                crop,
+                (i * 213 + 1 + (211 - crop.width) // 2, 50 + (202 - crop.height) // 2),
+            )
         draw.text((i * 213 + 12, 17), title, font=font, fill=(230, 234, 231))
         draw.text(
             (i * 213 + 12, 275),
-            "EVERGREEN / AMBER / CORAL",
+            "STRUCTURAL COLOR / mm",
             font=small,
             fill=(144, 161, 166),
         )

@@ -14,11 +14,11 @@ Example command:
 
 Use [this converter](https://lasttheory.com/tools/rle-to-text-converter) to convert initializations in [RLE](https://conwaylife.com/wiki/Run_Length_Encoded) to text.
 
-## Tabletop sculptures and time-band colors
+## Structurally colored tabletop sculptures
 
-Three small deterministic recipes live in `seeds/sculptures/`: a glider, a
-period-three pulsar, and a finite R-pentomino transient. Generate into a **new**
-output directory (existing design directories are never overwritten):
+Three deterministic recipes in `seeds/sculptures/` generate a glider, a
+period-three pulsar, and a finite R-pentomino transient. Use a dedicated
+environment and a **new** output directory:
 
 ```sh
 uv venv .venv
@@ -27,29 +27,44 @@ uv pip install --python .venv/bin/python -r requirements-sculptures.txt
 .venv/bin/python sculptures.py exports --validate-only
 ```
 
-Cascadia Mono is available from Microsoft's `cascadia-code` releases. Output:
-complete uncolored STL, three registered color STLs, a core multipart colored
-3MF, a color GLB, two bounded JPEG mesh views per design, a three-up overview,
-settings, seeds, and independent reload checks. STL/3MF coordinates are mm;
-GLB is converted to Y-up meters. Green includes the integrated plinth, followed
-by amber and coral time bands. Preserve the shared origin when importing parts;
-do not independently center, scale, or drop each part to the bed.
+To recolor previously generated shapes **without re-exporting the complete STL**,
+add `--complete-from originals`, where `originals/<design-id>/complete.stl` contains
+each authoritative shape. Recipe SHA-256 checks enforce byte-for-byte identity.
+Existing output design directories are never overwritten. Cascadia Mono is
+available from Microsoft's `cascadia-code` releases.
 
-The generator reuses `conway_step` and the existing thin trimesh transitions.
-Both exporters share the original birth-source traversal. Batch manifold union
-avoids repeated CSG meshing; the legacy CSG/Lego exporter remains available and
-now uses a private temporary STL instead of overwriting `m.stl`.
+Colors follow actual transition structure, not time bands: Evergreen plinth,
+Ivory framework and joint rims, Coral birth-link stems, Violet birth-link heads.
+The last two are volumetric corridors following the original deterministic
+source-neighbor construction, not claims of unique biological ancestry. Local
+head/neck motifs repeat on birth links while surviving links remain ivory, so
+multiple materials occupy the same horizontal levels. Up to four named materials
+are supported by the single 3MF/GLB export and independent validation pipeline;
+assembly IDs are allocated after all material mesh IDs.
 
-Recipes stop at the stated generation, not at extinction. The periodic Life
-board is padded and the generator checks that no live cells approach its seam.
-Time bands are intersections of the complete exported union, not separately
-simulated objects. Half-generation color cuts avoid cap-plane topology
-singularities. Checks compare their union and overlap against the complete STL,
-reload 3MF mesh/material buffers, and verify GLB colors, scale, orientation, and
-geometry. Upper pulsar bands contain four bodies; the complete sculpture is
-connected through its base. Mesh validity is **not** a printability guarantee:
-flared caps, sloping birth links, bridges, and narrow waists need process-specific
-overhang/support and strength review. No slicing or printing is performed.
+Outputs include the complete uncolored STL, registered closed per-material STLs,
+a standard core multipart/material 3MF, color GLB, two JPEG mesh views per design,
+a three-up overview, seeds, settings, and reload proofs. STL/3MF coordinates are
+millimeters; GLB uses Y-up meters. Import color STLs together as one multipart
+object; never independently center, scale, arrange, or drop them to the bed.
 
-Focused checks: `uv pip install --python .venv/bin/python pytest`, then
-`.venv/bin/python -m pytest -q`.
+The complete mesh is the authority. Double-precision Boolean masks only assign
+its volume to materials. Tiny kissing color-interface neighborhoods are assigned
+to an unbroken joint material without changing the sculpture. ASCII STLs retain
+fine interface precision. Coverage checks measure each part outside the authority,
+pairwise overlap, summed volume conservation, and material areas in identical
+horizontal cross-sections; this avoids a numerically fragile N-way re-weld of
+coincident interfaces. Strict lib3mf reload verifies material assignment and
+closed/oriented meshes; GLB buffers, colors, units, and orientation are reloaded.
+
+Life and the existing thin trimesh transition geometry are unchanged. Time 0 is
+the source plane and the last generation is a finite cut, not extinction. The
+periodic simulation is padded and checked to stay away from its seam. The legacy
+CSG/Lego geometry exporter still uses a private temporary STL, never cwd `m.stl`.
+Mesh validity is **not** physical print validation: narrow waists, diagonal birth
+struts, flared caps, bridges, and small color-interface features require
+process-specific review. These colors can require many filament swaps; minimizing
+swaps is not the design objective. No slicing or printing is performed.
+
+Tests: install `pytest` in that environment, then
+`.venv/bin/python -m pytest -q tests`.

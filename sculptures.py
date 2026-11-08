@@ -1,11 +1,11 @@
-"""Reproducible tabletop Life sculptures with registered time-band colors.
+"""Reproducible tabletop Life sculptures with structure-aware material colors.
 
 Usage: python sculptures.py OUTPUT --font /path/to/CascadiaMono.ttf
 No slicing, printer integration, or network calls are performed.
 """
 
 import argparse
-import itertools
+import hashlib
 import json
 import shutil
 import time
@@ -20,6 +20,11 @@ from lib3mf import get_wrapper
 from conway3d import boards_to_mesh
 from conway_to_stl import conway_to_boards
 from sculpture_preview import checked_jpeg, overview, render
+from structural_color import (
+    partition_certificate,
+    section_certificate,
+    structural_parts,
+)
 
 CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 ROOT = Path(__file__).resolve().parent
@@ -40,7 +45,7 @@ def mesh_stats(mesh):
         "consistent_winding": bool(mesh.is_winding_consistent),
         "positive_volume": bool(mesh.is_volume),
         "volume_mm3": float(mesh.volume),
-        "components": len(mesh.split(only_watertight=False)),
+        "components": len(mesh.split(only_watertight=False, repair=False)),
     }
 
 
@@ -73,24 +78,16 @@ def integrated_base(mesh, height, padding):
     return trimesh.convex.convex_hull(vertices)
 
 
-def split_epochs(mesh, cuts_mm):
-    """Intersect ONE complete union with touching closed Z slabs."""
-    lo, hi = mesh.bounds
-    bounds = [lo[2] - 1, *cuts_mm, hi[2] + 1]
-    parts = []
-    for bottom, top in itertools.pairwise(bounds):
-        box = trimesh.creation.box(
-            extents=[hi[0] - lo[0] + 2, hi[1] - lo[1] + 2, top - bottom]
-        )
-        box.apply_translation(
-            [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (bottom + top) / 2]
-        )
-        parts.append(trimesh.boolean.intersection([mesh, box], engine="manifold"))
-    return parts
+def check_materials(parts, palette):
+    if len(parts) != len(palette) or not 1 <= len(parts) <= 4:
+        raise ValueError("Need one nonempty mesh per material, one to four materials")
+    if len({color["name"] for color in palette}) != len(palette):
+        raise ValueError("Material names must be unique")
 
 
 def export_3mf(parts, palette, path):
-    """Core 3MF: one assembly, three base-material mesh components, mm."""
+    """Core 3MF: one assembly, one mesh per assigned material, mm."""
+    check_materials(parts, palette)
     ET.register_namespace("", CORE)
 
     def child(parent, tag, **attrs):
@@ -119,15 +116,18 @@ def export_3mf(parts, palette, path):
         body = child(obj, "mesh")
         vertices = child(body, "vertices")
         for x, y, z in mesh.vertices:
-            child(vertices, "vertex", x=f"{x:.9g}", y=f"{y:.9g}", z=f"{z:.9g}")
+            child(vertices, "vertex", x=f"{x:.17g}", y=f"{y:.17g}", z=f"{z:.17g}")
         triangles = child(body, "triangles")
         for a, b, c in mesh.faces:
             child(triangles, "triangle", v1=a, v2=b, v3=c)
-    assembly = child(resources, "object", id=5, type="model", name="Time-band assembly")
+    assembly_id = len(parts) + 2
+    assembly = child(
+        resources, "object", id=assembly_id, type="model", name="Structural assembly"
+    )
     components = child(assembly, "components")
     for i in range(len(parts)):
         child(components, "component", objectid=i + 2)
-    child(child(model, "build"), "item", objectid=5)
+    child(child(model, "build"), "item", objectid=assembly_id)
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr(
             "[Content_Types].xml",
@@ -152,6 +152,7 @@ def export_3mf(parts, palette, path):
 
 
 def export_glb(parts, palette, path):
+    check_materials(parts, palette)
     scene = trimesh.Scene()
     for mesh, color in zip(parts, palette):
         mesh = mesh.copy()
@@ -194,17 +195,17 @@ def validate_assets(directory):
             ]
         ), item
     assert stats["components"] == 1, stats
-    rebuilt = trimesh.boolean.union(parts, engine="manifold")
-    added = trimesh.boolean.difference([rebuilt, complete], engine="manifold").volume
-    missing = trimesh.boolean.difference([complete, rebuilt], engine="manifold").volume
-    overlap = sum(p.volume for p in parts) - rebuilt.volume
-    tolerance = max(0.01, complete.volume * 1e-6)
-    assert max(abs(added), abs(missing), abs(overlap)) < tolerance, (
-        added,
-        missing,
-        overlap,
+    certificate = partition_certificate(complete, parts)
+    complete_hash = hashlib.sha256(
+        (directory / "complete.stl").read_bytes()
+    ).hexdigest()
+    if "complete_sha256" in config:
+        assert complete_hash == config["complete_sha256"]
+    sections = (
+        section_certificate(complete, parts, config)
+        if "structural_color" in config
+        else []
     )
-    assert np.allclose(rebuilt.bounds, complete.bounds, atol=2e-5)
     # Decode the delivered XML ourselves; do not trust our writer's in-memory meshes.
     with zipfile.ZipFile(directory / "multicolor.3mf") as archive:
         assert archive.testzip() is None
@@ -234,12 +235,15 @@ def validate_assets(directory):
         # Same vertex/face buffers as the registered STL, not merely a matching bbox.
         assert np.allclose(np.array(points), part.vertices, atol=2e-5)
         assert np.array_equal(faces, part.faces)
-    components = resources.find('m:object[@id="5"]/m:components', ns)
-    assert [c.attrib["objectid"] for c in components] == ["2", "3", "4"]
+    assembly_id = str(len(parts) + 2)
+    components = resources.find(f'm:object[@id="{assembly_id}"]/m:components', ns)
+    assert [c.attrib["objectid"] for c in components] == [
+        str(i + 2) for i in range(len(parts))
+    ]
     assert all("transform" not in c.attrib for c in components)
-    assert xml.find("m:build/m:item", ns).attrib["objectid"] == "5"
+    assert xml.find("m:build/m:item", ns).attrib["objectid"] == assembly_id
     glb = trimesh.load(directory / "multicolor.glb", force="scene")
-    assert len(glb.geometry) == 3
+    assert len(glb.geometry) == len(parts)
     glb.apply_transform(TO_GLTF.T)
     glb.apply_scale(1000)
     assert np.allclose(glb.bounds, complete.bounds, atol=2e-5)
@@ -271,7 +275,7 @@ def validate_assets(directory):
     reader.SetStrictModeActive(True)
     reader.ReadFromFile(str(directory / "multicolor.3mf"))
     assert reader.GetWarningCount() == 0
-    assert model.GetMeshObjects().Count() == 3
+    assert model.GetMeshObjects().Count() == len(parts)
     assert model.GetComponentsObjects().Count() == 1
     assert model.GetBuildItems().Count() == 1
     iterator = model.GetMeshObjects()
@@ -294,23 +298,22 @@ def validate_assets(directory):
         "lib3mf_strict": {
             "version": list(wrapper.GetLibraryVersion()),
             "warnings": 0,
-            "mesh_objects": 3,
+            "mesh_objects": len(parts),
             "assemblies": 1,
             "build_items": 1,
             "all_manifold_oriented_and_materials_verified": True,
         },
         "complete": stats,
         "color_parts": part_stats,
-        "color_union_added_mm3": float(added),
-        "color_union_missing_mm3": float(missing),
-        "color_overlap_mm3": float(overlap),
-        "equivalence_tolerance_mm3": tolerance,
+        "complete_sha256": complete_hash,
+        "partition_certificate": certificate,
+        "horizontal_sections": sections,
         "three_mf_registered_materials_and_buffers": True,
         "glb_y_up_meters_colors_and_buffers": True,
     }
 
 
-def build_design(config, palette, seed_dir, output):
+def build_design(config, palette, seed_dir, output, complete_from=None):
     destination = output / config["id"]
     destination.mkdir(parents=True, exist_ok=False)
     seed = seed_dir / config["seed"]
@@ -338,16 +341,24 @@ def build_design(config, palette, seed_dir, output):
         ],
         engine="manifold",
     )
-    mesh.export(destination / "complete.stl")
-    step_mm = (
-        config["cell_mm"] * np.tan(np.radians(config["angle_degrees"])) * np.sqrt(2)
-    )
-    cuts = [config["base_height_mm"] + t * step_mm for t in config["epoch_cuts"]]
-    # Derive color parts from the disk STL, so nothing follows an independent geometry path.
+    if complete_from is None:
+        mesh.export(destination / "complete.stl")
+    else:
+        shutil.copy2(
+            complete_from / config["id"] / "complete.stl", destination / "complete.stl"
+        )
     complete = trimesh.load_mesh(destination / "complete.stl", process=True)
-    parts = split_epochs(complete, cuts)
+    complete_hash = hashlib.sha256(
+        (destination / "complete.stl").read_bytes()
+    ).hexdigest()
+    if "complete_sha256" in config and complete_hash != config["complete_sha256"]:
+        raise ValueError("Complete shape differs from the recipe's authoritative STL")
+    parts, structure = structural_parts(complete, boards, config)
     for i, (part, color) in enumerate(zip(parts, palette)):
-        part.export(destination / f"{i + 1:02}-{color['name'].lower()}.stl")
+        part.export(
+            destination / f"{i + 1:02}-{color['name'].lower()}.stl",
+            file_type="stl_ascii",
+        )
     parts = [
         trimesh.load_mesh(
             destination / f"{i + 1:02}-{c['name'].lower()}.stl", process=True
@@ -359,8 +370,11 @@ def build_design(config, palette, seed_dir, output):
     settings = {
         **config,
         "palette": palette,
-        "generation_height_mm": step_mm,
-        "epoch_cut_z_mm": cuts,
+        "complete_sha256": complete_hash,
+        "generation_height_mm": config["cell_mm"]
+        * np.tan(np.radians(config["angle_degrees"]))
+        * np.sqrt(2),
+        "structure": structure,
         "population_by_generation": [int(b.sum()) for b in boards],
         "boundary": "periodic simulation; all live cells stay >1 cell from seam",
         "geometry": "original thin trimesh transitions; manifold union; integrated plinth",
@@ -377,6 +391,11 @@ def main():
         "--config", type=Path, default=ROOT / "seeds/sculptures/designs.json"
     )
     parser.add_argument("--font", type=Path)
+    parser.add_argument(
+        "--complete-from",
+        type=Path,
+        help="Copy authoritative complete STLs from these design folders",
+    )
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     configs = json.loads(args.config.read_text())
@@ -391,10 +410,14 @@ def main():
             destination = args.output / design["id"]
         else:
             destination, parts = build_design(
-                design, configs["palette"], args.config.parent, args.output
+                design,
+                configs["palette"],
+                args.config.parent,
+                args.output,
+                args.complete_from,
             )
             palette = [c["hex"] for c in configs["palette"]]
-            subtitle = f"t 0-{design['generations']} / {design['cell_mm']:g} mm cells"
+            subtitle = "IVORY FRAME / CORAL LINKS / VIOLET HEADS"
             for suffix, az, el in [
                 ("preview", design["view_azimuth"], 24),
                 ("detail", design["view_azimuth"] + 95, 38),

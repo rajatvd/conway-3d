@@ -2,15 +2,19 @@
   "palette": [
     {
       "name": "Evergreen",
-      "hex": "#20856C"
+      "hex": "#176454"
     },
     {
-      "name": "Amber",
-      "hex": "#E8B44F"
+      "name": "Ivory",
+      "hex": "#F3E9CE"
     },
     {
       "name": "Coral",
-      "hex": "#EC7864"
+      "hex": "#FF594D"
+    },
+    {
+      "name": "Violet",
+      "hex": "#9971F4"
     }
   ],
   "designs": [
@@ -22,13 +26,20 @@
       "cell_mm": 3.8,
       "angle_degrees": 45,
       "world_padding": 20,
-      "epoch_cuts": [
-        5.5,
-        11.5
-      ],
       "base_height_mm": 3.2,
       "base_padding_mm": 3.5,
-      "view_azimuth": -48
+      "view_azimuth": -48,
+      "complete_sha256": "173178ecf7930a5c9e087c70b92050c292a1ac4a6840cb66da153c21807577ae",
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      }
     },
     {
       "id": "pulsar-cathedral",
@@ -38,13 +49,20 @@
       "cell_mm": 5.0,
       "angle_degrees": 45,
       "world_padding": 20,
-      "epoch_cuts": [
-        3.5,
-        6.5
-      ],
       "base_height_mm": 3.2,
       "base_padding_mm": 3.5,
-      "view_azimuth": -48
+      "view_azimuth": -48,
+      "complete_sha256": "62ac1ec5b3217a0f0c20d9d3aeba24a6768b30e82ce7a468dd0802a89dd4a340",
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      }
     },
     {
       "id": "r-bloom",
@@ -54,13 +72,20 @@
       "cell_mm": 3.8,
       "angle_degrees": 45,
       "world_padding": 20,
-      "epoch_cuts": [
-        5.5,
-        11.5
-      ],
       "base_height_mm": 3.2,
       "base_padding_mm": 3.5,
-      "view_azimuth": -38
+      "view_azimuth": -38,
+      "complete_sha256": "a262a6b633dadb38f3c120677a59e28d3411e072c4b3a03d3df6491e7e581144",
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      }
     }
   ]
 }
