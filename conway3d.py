@@ -9,6 +9,7 @@ from trimesh_conway import (
     get_parallelipiped_trimesh,
     get_thin_transition_trimesh,
     make_lego_trimesh,
+    union_meshes,
 )
 
 from csg_conway import get_parallelipiped_csg, get_thin_transition_csg, make_lego_csg
@@ -104,7 +105,7 @@ def boards_to_mesh(boards, angle=45, scale=1):
     ]
     if not links:
         raise ValueError("No cells in the board")
-    mesh = trimesh.boolean.union(links, engine="manifold")
+    mesh = union_meshes(links)
     mesh.vertices[:, 2] *= np.tan(np.radians(angle)) * np.sqrt(2)
     mesh.vertices *= scale
     return mesh

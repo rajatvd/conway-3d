@@ -27,9 +27,25 @@ uv pip install --python .venv/bin/python -r requirements-sculptures.txt
 .venv/bin/python sculptures.py exports --validate-only
 ```
 
+For three broader, longer-history structures, select the separate recipe set:
+
+```sh
+.venv/bin/python sculptures.py intricate-exports --config seeds/sculptures/intricate.json --font /path/to/CascadiaMono.ttf
+```
+
+It contains a four-cycle Kok's galaxy vault, a two-cycle Gosper gun network,
+and an authored interacting pair of acorns. Longest dimensions are about
+114–166 mm, using 3.8–6 mm cells. Canonical seed attribution and the scoped
+GFDL pattern-data license live in `seeds/sculptures/intricate/PROVENANCE.md`;
+software remains MIT licensed. The independent seed tests verify the periods,
+emitted glider, real collision, and unbounded sparse Life agreement.
+
 To recolor previously generated shapes **without re-exporting the complete STL**,
 add `--complete-from originals`, where `originals/<design-id>/complete.stl` contains
 each authoritative shape. Recipe SHA-256 checks enforce byte-for-byte identity.
+New generation uses one double-precision union path and ASCII complete STLs,
+with a newly recorded output hash; historical recipe hashes are enforced for
+explicit authority copies, not assumed invariant under reserialization.
 Existing output design directories are never overwritten. Cascadia Mono is
 available from Microsoft's `cascadia-code` releases.
 

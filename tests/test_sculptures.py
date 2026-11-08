@@ -18,6 +18,7 @@ from sculptures import (
     validate_assets,
 )
 from structural_color import partition_certificate, structural_parts
+from trimesh_conway import union_meshes
 
 SEEDS = Path(__file__).resolve().parents[1] / "seeds/sculptures"
 PALETTE = json.loads((SEEDS / "designs.json").read_text())["palette"]
@@ -131,10 +132,8 @@ def test_scratch_does_not_overwrite_cwd(tmp_path, monkeypatch):
 def test_full_roundtrip_and_color_partition(tmp_path, seed, generations, scale):
     mesh = boards_to_mesh(boards(seed, generations), scale=scale)
     mesh.apply_translation([-mesh.bounds[:, 0].mean(), -mesh.bounds[:, 1].mean(), 3.2])
-    mesh = trimesh.boolean.union(
-        [mesh, integrated_base(mesh, 3.2, 3.5)], engine="manifold"
-    )
-    mesh.export(tmp_path / "complete.stl")
+    mesh = union_meshes([mesh, integrated_base(mesh, 3.2, 3.5)])
+    mesh.export(tmp_path / "complete.stl", file_type="stl_ascii")
     mesh = trimesh.load_mesh(tmp_path / "complete.stl")
     config = next(
         d
@@ -226,3 +225,22 @@ def test_invalid_material_counts(exporter, tmp_path):
         exporter([], [], tmp_path / "empty")
     with pytest.raises(ValueError):
         exporter([trimesh.creation.box()], PALETTE, tmp_path / "mismatch")
+
+
+def test_recipe_historical_hash_is_enforced_for_copy_not_reserialization(tmp_path):
+    import hashlib
+
+    from sculptures import build_design
+
+    config = json.loads((SEEDS / "designs.json").read_text())["designs"][0]
+    config = {**config, "generations": 4, "complete_sha256": "0" * 64}
+    output = tmp_path / "generated"
+    directory, _ = build_design(config, PALETTE, SEEDS, output)
+    actual = hashlib.sha256((directory / "complete.stl").read_bytes()).hexdigest()
+    assert actual != config["complete_sha256"]
+    assert (
+        json.loads((directory / "settings.json").read_text())["complete_sha256"]
+        == actual
+    )
+    with pytest.raises(ValueError, match="authoritative STL"):
+        build_design(config, PALETTE, SEEDS, tmp_path / "copied", complete_from=output)

@@ -1,0 +1,94 @@
+{
+  "palette": [
+    {
+      "name": "Evergreen",
+      "hex": "#176454"
+    },
+    {
+      "name": "Ivory",
+      "hex": "#F3E9CE"
+    },
+    {
+      "name": "Coral",
+      "hex": "#FF594D"
+    },
+    {
+      "name": "Violet",
+      "hex": "#9971F4"
+    }
+  ],
+  "designs": [
+    {
+      "id": "galaxy-vault",
+      "title": "GALAXY / VAULT",
+      "seed": "intricate/koks-galaxy.txt",
+      "generations": 32,
+      "cell_mm": 6.0,
+      "angle_degrees": 22,
+      "world_padding": 40,
+      "base_height_mm": 4.0,
+      "base_padding_mm": 5.0,
+      "view_azimuth": -48,
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      },
+      "semantics": "Kok's galaxy; four full period-eight cycles; finite t=0..32",
+      "subtitle": "P8 / FOUR CYCLES / t 0-32"
+    },
+    {
+      "id": "gosper-loom",
+      "title": "GOSPER / LOOM",
+      "seed": "intricate/gosper-glider-gun.txt",
+      "generations": 64,
+      "cell_mm": 4.0,
+      "angle_degrees": 18,
+      "world_padding": 40,
+      "base_height_mm": 4.0,
+      "base_padding_mm": 5.0,
+      "view_azimuth": -55,
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      },
+      "semantics": "Gosper glider gun; two complete period-30 core cycles plus four steps; finite t=0..64",
+      "subtitle": "P30 CORE / TWO CYCLES / t 0-64"
+    },
+    {
+      "id": "crossfire-arbor",
+      "title": "CROSSFIRE / ARBOR",
+      "seed": "intricate/acorn-crossfire.txt",
+      "generations": 32,
+      "cell_mm": 3.8,
+      "angle_degrees": 24,
+      "world_padding": 40,
+      "base_height_mm": 4.0,
+      "base_padding_mm": 5.0,
+      "view_azimuth": -42,
+      "structural_color": {
+        "corridor_width_cells": 0.927,
+        "link_interval": [
+          0.11,
+          0.935
+        ],
+        "head_start": 0.64,
+        "plinth_overlap_mm": 0.22,
+        "junction_clearance_mm": 0.012
+      },
+      "semantics": "Authored two-acorn interaction; first departure from independent evolution t=11; finite t=0..32",
+      "subtitle": "INTERACTING ACORNS / t 0-32"
+    }
+  ]
+}

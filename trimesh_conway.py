@@ -1,6 +1,31 @@
 import numpy as np
 import trimesh
+
 from oop3d import TrimeshThing
+
+
+def native(mesh):
+    """Preserve double precision when entering the Manifold kernel."""
+    import manifold3d as md
+
+    result = md.Manifold(md.Mesh64(np.float64(mesh.vertices), np.uint64(mesh.faces)))
+    if result.status() != md.Error.NoError:
+        raise ValueError(f"Invalid manifold input: {result.status()}")
+    return result
+
+
+def mesh64(solid):
+    data = solid.to_mesh64()
+    return trimesh.Trimesh(
+        data.vert_properties[:, :3].copy(), data.tri_verts.copy(), process=False
+    )
+
+
+def union_meshes(meshes):
+    """One double-precision mesh union path for transitions and bases."""
+    import manifold3d as md
+
+    return mesh64(md.Manifold.batch_boolean([native(m) for m in meshes], md.OpType.Add))
 
 
 def get_parallelipiped_trimesh(vertices):
@@ -88,12 +113,10 @@ def make_lego_trimesh(x, y, z, lego_height, lego_width, scale=1.0):
         [x + 1 - border, y + border, z],
         [x + 1 - border, y + 1 - border, z],
         [x + border, y + 1 - border, z],
-        #
         [x + border, y + border, z + lego_mid_height],
         [x + 1 - border, y + border, z + lego_mid_height],
         [x + 1 - border, y + 1 - border, z + lego_mid_height],
         [x + border, y + 1 - border, z + lego_mid_height],
-        #
         [x + 0.5, y + 0.5, z + lego_height],
     ]
 

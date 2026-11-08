@@ -25,6 +25,7 @@ from structural_color import (
     section_certificate,
     structural_parts,
 )
+from trimesh_conway import union_meshes
 
 CORE = "http://schemas.microsoft.com/3dmanufacturing/core/2015/02"
 ROOT = Path(__file__).resolve().parent
@@ -334,15 +335,14 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
             config["base_height_mm"] - mesh.bounds[0, 2],
         ]
     )
-    mesh = trimesh.boolean.union(
+    mesh = union_meshes(
         [
             mesh,
             integrated_base(mesh, config["base_height_mm"], config["base_padding_mm"]),
-        ],
-        engine="manifold",
+        ]
     )
     if complete_from is None:
-        mesh.export(destination / "complete.stl")
+        mesh.export(destination / "complete.stl", file_type="stl_ascii")
     else:
         shutil.copy2(
             complete_from / config["id"] / "complete.stl", destination / "complete.stl"
@@ -351,7 +351,11 @@ def build_design(config, palette, seed_dir, output, complete_from=None):
     complete_hash = hashlib.sha256(
         (destination / "complete.stl").read_bytes()
     ).hexdigest()
-    if "complete_sha256" in config and complete_hash != config["complete_sha256"]:
+    if (
+        complete_from is not None
+        and "complete_sha256" in config
+        and complete_hash != config["complete_sha256"]
+    ):
         raise ValueError("Complete shape differs from the recipe's authoritative STL")
     parts, structure = structural_parts(complete, boards, config)
     for i, (part, color) in enumerate(zip(parts, palette)):
@@ -417,7 +421,9 @@ def main():
                 args.complete_from,
             )
             palette = [c["hex"] for c in configs["palette"]]
-            subtitle = "IVORY FRAME / CORAL LINKS / VIOLET HEADS"
+            subtitle = design.get(
+                "subtitle", "IVORY FRAME / CORAL LINKS / VIOLET HEADS"
+            )
             for suffix, az, el in [
                 ("preview", design["view_azimuth"], 24),
                 ("detail", design["view_azimuth"] + 95, 38),
@@ -446,7 +452,7 @@ def main():
         overview(
             previews,
             args.output / "overview.jpg",
-            ["GLIDER / COMET", "PULSAR / CATHEDRAL", "R / BLOOM"],
+            [d["title"] for d in configs["designs"]],
             args.font,
         )
     results["overview"] = checked_jpeg(args.output / "overview.jpg")

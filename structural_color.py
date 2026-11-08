@@ -13,20 +13,7 @@ import numpy as np
 import trimesh
 
 from conway3d import boards_to_mesh, transition_vertices
-
-
-def native(mesh):
-    result = md.Manifold(md.Mesh64(np.float64(mesh.vertices), np.uint64(mesh.faces)))
-    if result.status() != md.Error.NoError:
-        raise ValueError(f"Invalid manifold input: {result.status()}")
-    return result
-
-
-def mesh64(solid):
-    data = solid.to_mesh64()
-    return trimesh.Trimesh(
-        data.vert_properties[:, :3].copy(), data.tri_verts.copy(), process=False
-    )
+from trimesh_conway import mesh64, native
 
 
 def decoded_stl(solid):
